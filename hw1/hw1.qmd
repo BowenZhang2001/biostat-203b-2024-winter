@@ -280,7 +280,11 @@ rm ./labevents.csv
 wget -nc http://www.gutenberg.org/cache/epub/42671/pg42671.txt
 ```
 
-Explain what `wget -nc` does. Do **not** put this text file `pg42671.txt` in Git. Complete the following loop to tabulate the number of times each of the four characters is mentioned using Linux commands.
+Explain what `wget -nc` does. Do **not** put this text file `pg42671.txt` in Git.
+
+**Answer: ** `wget -nc` is used to download files from the internet. `-nc` means "no clobber", which means that existing files will not be overwritten. The file has been downloaded to my local folder, and it is not put into Git.
+
+Complete the following loop to tabulate the number of times each of the four characters is mentioned using Linux commands.
 
 ```{bash}
 #| eval: false
@@ -289,8 +293,12 @@ for char in Elizabeth Jane Lydia Darcy
 do
   echo $char:
   # some bash commands here
+  grep -o -i "$char" pg42671.txt | wc -w
 done
 ```
+**Answer: ** The above code shows the number of times each of the four characters is mentioned. Elizabeth is mentioned 634 times, Jane is mentioned 293 times, Lydia is mentioned 171 times, and Darcy is mentioned 418 times.
+
+
 
 2.  What's the difference between the following two commands?
 
@@ -306,6 +314,9 @@ and
 echo 'hello, world' >> test2.txt
 ```
 
+**Answer: ** The first command will create a new file named `test1.txt` and write `hello, world` to it. If the file already exists, it will be overwritten with the new content. The second command will create a new file named `test2.txt` and write `hello, world` to it. If the file already exists, it will be appended to the end of the file.
+
+
 3.  Using your favorite text editor (e.g., `vi`), type the following and save the file as `middle.sh`:
 
 ```{bash eval=FALSE}
@@ -318,15 +329,132 @@ head -n "$2" "$1" | tail -n "$3"
 Using `chmod` to make the file executable by the owner, and run
 
 ```{bash}
-#| eval: false
+#| eval: true
+chmod u+x middle.sh
 ./middle.sh pg42671.txt 20 5
 ```
-
 Explain the output. Explain the meaning of `"$1"`, `"$2"`, and `"$3"` in this shell script. Why do we need the first line of the shell script?
+
+**Answer: ** This command will display the last 5 lines of the first 20 lines of the file pg42671.txt. `"$1"`, `"$2"`, `"$3"` are the first, second, and third argument passed to `middle.sh` when it is executed. `"$1"` would be replaced with `pg42671.txt`, which is the filename. `"$2"` would be replaced with 20, which represents the end line from where to start selecting lines. `"$3"`would be replaced with 5, which represents the number of lines to select from the middle. We need the first line of the shell script because it tells the system that this is a shell script and it should be executed by the shell.
 
 ## Q5. More fun with Linux
 
 Try following commands in Bash and interpret the results: `cal`, `cal 2024`, `cal 9 1752` (anything unusual?), `date`, `hostname`, `arch`, `uname -a`, `uptime`, `who am i`, `who`, `w`, `id`, `last | head`, `echo {con,pre}{sent,fer}{s,ed}`, `time sleep 5`, `history | tail`.
+
+**Answer: **
+
+```{bash}
+#| eval: true
+cal
+```
+`cal` is used to display a calendar of the current month.
+
+```{bash}
+#| eval: true
+
+cal 2024
+```
+`cal 2024` is used to display a calendar of the year 2024.
+
+```{bash}
+#| eval: true
+
+cal 9 1752
+```
+`cal 9 1752` is to display a calendar of September, 1752. The calendar is missing 11 days. This is because the British Empire adopted the Gregorian calendar on September 14, 1752, which meant that the day after September 2, 1752 was September 14, 1752.
+
+```{bash}
+#| eval: true
+
+date
+```
+`date` is used to display the current date and time.
+
+```{bash} 
+#| eval: true
+
+hostname
+```
+`hostname` is used to display the name of the current host system.
+
+```{bash}
+#| eval: true
+
+arch
+```
+`arch` is used to display the machine architecture.
+
+```{bash}
+#| eval: true
+
+uname -a
+```
+`uname -a` is used to display all system information.
+
+```{bash}
+#| eval: true
+
+uptime
+```
+`uptime` is used to check how long the system has been running and to display system load averages. The first output is the current time. The second output is how long the system has been running. The third output is the number of users currently logged on. The fourth output is the system load averages for the past 1, 5, and 15 minutes.
+
+```{bash}
+#| eval: true
+
+whoami
+```
+`whoami` is used to display the current user name. in Windows Subsystem for Linux, `who am i` does not work.
+
+```{bash}
+#| eval: true
+
+who
+```
+`who` is used to display the users who are currently logged in.
+
+```{bash}
+#| eval: true
+
+w
+```
+`w` is used to display the information about the users currently on the machine, and their processes.
+
+```{bash}
+#| eval: true
+
+id
+```
+`id` is used to display the user and group IDs of the current user.
+
+```{bash}
+#| eval: true
+
+last | head
+```
+`last | head` is used to display the last 10 logins.
+
+```{bash}
+#| eval: true
+
+echo {con,pre}{sent,fer}{s,ed}
+```
+`echo {con,pre}{sent,fer}{s,ed}` is used to display the following words: consents, consented, consfers, consfered, presents, presented, presfers, presfered. It is an example of Brace Expansion. It can generate multiple strings based on specified patterns. The first part is from `{con,pre}`, the second part is from `{sent,fer}`, and the third part is from `{s,ed}`, so it has 8 combinations in total.
+
+```{bash}
+#| eval: true
+
+time sleep 5
+```
+`time sleep 5` is used to display the time it takes to run the command `sleep 5`. The output is `real 0m5.003s`, which means that it takes 5.003 seconds to run the command `sleep 5`. `time` command is to record the time it takes to run a command. `sleep` command is to delay the execution of the next command for a specified amount of time.
+
+```{bash}
+#| eval: true
+
+history | tail
+```
+
+`history | tail` is used to display the last 10 commands that have been executed. This command does not work on Rstudio server. It might because Rstudio does not have the access. However, it works on wsl. The following is the snapshot of the output.
+![history](history.jpg)
 
 ## Q6. Book
 
