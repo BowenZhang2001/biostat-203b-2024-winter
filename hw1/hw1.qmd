@@ -57,6 +57,7 @@ This exercise (and later in this course) uses the [MIMIC-IV data v2.2](https://p
 
 ```{bash}
 #| eval: true
+
 ls -l ~/mimic/
 ```
 
@@ -74,6 +75,7 @@ This is the content of the `hosp` folder:
 
 ```{bash}
 #| eval: true
+
 ls -l ~/mimic/hosp
 ```
 
@@ -81,6 +83,7 @@ This is the content of the `icu` folder:
 
 ```{bash}
 #| eval: true
+
 ls -l ~/mimic/icu/
 ```
 
@@ -100,6 +103,7 @@ ls -l ~/mimic/icu/
 
 ```{bash}
 #| eval: true
+
 for datafile in ~/mimic/hosp/{a,l,pa}*.gz
 do
   ls -l $datafile
@@ -111,14 +115,17 @@ Display the number of lines in each data file using a similar loop. (Hint: combi
 
 ```{bash}
 #| eval: false
+
 for datafile in ~/mimic/hosp/{a,l,pa}*.gz
 do
   zcat < $datafile | wc -l
 done
 ```
-There are 431232 lines in `admissions.csv.gz`, 118171368 lines in `labevents.csv.gz`, and 299713 lines in `patients.csv.gz`.
+There are 431232 lines in `admissions.csv.gz`, 118171368 lines in `labevents.csv.gz`, and 299713 lines in `patients.csv.gz`, including the header line. Since there are too many lines in `labevents.csv.gz`, so I set `eval: false` for the above code.
 
 5.  Display the first few lines of `admissions.csv.gz`. How many rows are in this data file? How many unique patients (identified by `subject_id`) are in this data file? Do they match the number of patients listed in the `patients.csv.gz` file? (Hint: combine Linux commands `zcat <`, `head`/`tail`, `awk`, `sort`, `uniq`, `wc`, and so on.)
+
+**Answer: ** 
 
 ```{bash}
 #| eval: true
@@ -147,9 +154,11 @@ zcat < ~/mimic/hosp/patients.csv.gz \
     | uniq \
     | wc -l 
 ```
-**Answer: ** The first few lines of `admissions.csv.gz` are displayed above. There are 431232 rows in this data file (including one row for the name of the variables). There are 180733 unique patients in this data file (excluding the header line). They do not match the number of patients listed in the `patients.csv.gz` file, which is 299712 (excluding the header line).
+The first few lines of `admissions.csv.gz` are displayed above. There are 431232 rows in this data file (including one row for the name of the variables). There are 180733 unique patients in this data file (excluding the header line). They do not match the number of patients listed in the `patients.csv.gz` file, which is 299712 (excluding the header line).
 
 6.  What are the possible values taken by each of the variable `admission_type`, `admission_location`, `insurance`, and `race`? Also report the count for each unique value of these variables. (Hint: combine Linux commands `zcat`, `head`/`tail`, `awk`, `uniq -c`, `wc`, and so on; skip the header line.)
+
+**Answer: **
 
 ```{bash}
 #| eval: true
@@ -231,6 +240,8 @@ zcat < ~/mimic/hosp/admissions.csv.gz \
 
 7.  *To compress, or not to compress. That's the question.* Let's focus on the big data file `labevents.csv.gz`. Compare compressed gz file size to the uncompressed file size. Compare the run times of `zcat < ~/mimic/labevents.csv.gz | wc -l` versus `wc -l labevents.csv`. Discuss the trade off between storage and speed for big data files. (Hint: `gzip -dk < FILENAME.gz > ./FILENAME`. Remember to delete the large `labevents.csv` file after the exercise.)
 
+**Answer: **
+
 ```{bash}
 #| eval: false
 
@@ -250,7 +261,6 @@ ls -l ./labevents.csv
 Notice that the size of the labevents.csv.gz file is 1.8G, while the size of the labevents.csv file is 12.8G. The size of the labevents.csv.gz file is much smaller than the size of the labevents.csv file.
 
 
-
 ```{bash}
 #| eval: false
 
@@ -260,7 +270,7 @@ time zcat < ~/mimic/hosp/labevents.csv.gz | wc -l
 time wc -l labevents.csv
 
 ```
-Notice that for labevents.csv.gz, it takes 1 min 23 sec to run the `~/mimic/hosp/labevents.csv.gz | wc -l` command, while for the decompressed file labevents.csv, it only takes 15 sec to run the `wc -l labevents.csv` command. Compressed files save disk space, which is beneficial when dealing with large datasets. However, if we read from a compressed file (zcat), the decompression step will introduce additional processing time comparing to directly reading csv files.
+Notice that for labevents.csv.gz, it takes 1 min 23 sec to run the `~/mimic/hosp/labevents.csv.gz | wc -l` command, while for the decompressed file labevents.csv, it only takes 15 sec to run the `wc -l labevents.csv` command. Compressed files save disk space, which is beneficial when dealing with large datasets. However, if we read from a compressed file (zcat), it will introduce additional processing time comparing to directly reading csv files.
 
 ```{bash}
 #| eval: false
@@ -277,6 +287,7 @@ rm ./labevents.csv
 
 ```{bash}
 #| eval: false
+
 wget -nc http://www.gutenberg.org/cache/epub/42671/pg42671.txt
 ```
 
@@ -288,6 +299,7 @@ Complete the following loop to tabulate the number of times each of the four cha
 
 ```{bash}
 #| eval: false
+
 wget -nc http://www.gutenberg.org/cache/epub/42671/pg42671.txt
 for char in Elizabeth Jane Lydia Darcy
 do
@@ -403,7 +415,7 @@ uptime
 
 whoami
 ```
-`whoami` is used to display the current user name. in Windows Subsystem for Linux, `who am i` does not work.
+`whoami` is used to display the current user name. In Windows Subsystem for Linux, `who am i` does not work.
 
 ```{bash}
 #| eval: true

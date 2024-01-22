@@ -3182,10 +3182,11 @@ drwxrwxrwx 1 bowenzhangstats bowenzhangstats  4096 Jan 16 10:18 icu</code></pre>
 <span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">zcat</span> <span class="op">&lt;</span> <span class="va">$datafile</span> <span class="kw">|</span> <span class="fu">wc</span> <span class="at">-l</span></span>
 <span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a><span class="cf">done</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
-<p>There are 431232 lines in <code>admissions.csv.gz</code>, 118171368 lines in <code>labevents.csv.gz</code>, and 299713 lines in <code>patients.csv.gz</code>.</p>
+<p>There are 431232 lines in <code>admissions.csv.gz</code>, 118171368 lines in <code>labevents.csv.gz</code>, and 299713 lines in <code>patients.csv.gz</code>, including the header line. Since there are too many lines in <code>labevents.csv.gz</code>, so I set <code>eval: false</code> for the above code.</p>
 <ol start="5" type="1">
 <li>Display the first few lines of <code>admissions.csv.gz</code>. How many rows are in this data file? How many unique patients (identified by <code>subject_id</code>) are in this data file? Do they match the number of patients listed in the <code>patients.csv.gz</code> file? (Hint: combine Linux commands <code>zcat &lt;</code>, <code>head</code>/<code>tail</code>, <code>awk</code>, <code>sort</code>, <code>uniq</code>, <code>wc</code>, and so on.)</li>
 </ol>
+<p><strong>Answer: </strong></p>
 <div class="cell" data-layout-align="center">
 <div class="sourceCode cell-code" id="cb11"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Display the first few lines of admissions.csv.gz</span></span>
 <span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a><span class="fu">zcat</span> <span class="op">&lt;</span> ~/mimic/hosp/admissions.csv.gz <span class="dt">\</span></span>
@@ -3226,10 +3227,11 @@ drwxrwxrwx 1 bowenzhangstats bowenzhangstats  4096 Jan 16 10:18 icu</code></pre>
 299712</code></pre>
 </div>
 </div>
-<p><strong>Answer: </strong> The first few lines of <code>admissions.csv.gz</code> are displayed above. There are 431232 rows in this data file (including one row for the name of the variables). There are 180733 unique patients in this data file (excluding the header line). They do not match the number of patients listed in the <code>patients.csv.gz</code> file, which is 299712 (excluding the header line).</p>
+<p>The first few lines of <code>admissions.csv.gz</code> are displayed above. There are 431232 rows in this data file (including one row for the name of the variables). There are 180733 unique patients in this data file (excluding the header line). They do not match the number of patients listed in the <code>patients.csv.gz</code> file, which is 299712 (excluding the header line).</p>
 <ol start="6" type="1">
 <li>What are the possible values taken by each of the variable <code>admission_type</code>, <code>admission_location</code>, <code>insurance</code>, and <code>race</code>? Also report the count for each unique value of these variables. (Hint: combine Linux commands <code>zcat</code>, <code>head</code>/<code>tail</code>, <code>awk</code>, <code>uniq -c</code>, <code>wc</code>, and so on; skip the header line.)</li>
 </ol>
+<p><strong>Answer: </strong></p>
 <div class="cell" data-layout-align="center">
 <div class="sourceCode cell-code" id="cb13"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Show possible values taken by the variable admission_type and their counts</span></span>
 <span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a><span class="fu">zcat</span> <span class="op">&lt;</span> ~/mimic/hosp/admissions.csv.gz <span class="dt">\</span></span>
@@ -3365,6 +3367,7 @@ drwxrwxrwx 1 bowenzhangstats bowenzhangstats  4096 Jan 16 10:18 icu</code></pre>
 <ol start="7" type="1">
 <li><em>To compress, or not to compress. That’s the question.</em> Let’s focus on the big data file <code>labevents.csv.gz</code>. Compare compressed gz file size to the uncompressed file size. Compare the run times of <code>zcat &lt; ~/mimic/labevents.csv.gz | wc -l</code> versus <code>wc -l labevents.csv</code>. Discuss the trade off between storage and speed for big data files. (Hint: <code>gzip -dk &lt; FILENAME.gz &gt; ./FILENAME</code>. Remember to delete the large <code>labevents.csv</code> file after the exercise.)</li>
 </ol>
+<p><strong>Answer: </strong></p>
 <div class="cell" data-layout-align="center">
 <div class="sourceCode cell-code" id="cb21"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Uncompress the labevents.csv.gz file</span></span>
 <span id="cb21-2"><a href="#cb21-2" aria-hidden="true" tabindex="-1"></a><span class="fu">gzip</span> <span class="at">-dk</span> <span class="op">&lt;</span> ~/mimic/hosp/labevents.csv.gz <span class="op">&gt;</span> ./labevents.csv</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
@@ -3383,7 +3386,7 @@ drwxrwxrwx 1 bowenzhangstats bowenzhangstats  4096 Jan 16 10:18 icu</code></pre>
 <span id="cb23-3"><a href="#cb23-3" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb23-4"><a href="#cb23-4" aria-hidden="true" tabindex="-1"></a><span class="bu">time</span> wc <span class="at">-l</span> labevents.csv</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
-<p>Notice that for labevents.csv.gz, it takes 1 min 23 sec to run the <code>~/mimic/hosp/labevents.csv.gz | wc -l</code> command, while for the decompressed file labevents.csv, it only takes 15 sec to run the <code>wc -l labevents.csv</code> command. Compressed files save disk space, which is beneficial when dealing with large datasets. However, if we read from a compressed file (zcat), the decompression step will introduce additional processing time comparing to directly reading csv files.</p>
+<p>Notice that for labevents.csv.gz, it takes 1 min 23 sec to run the <code>~/mimic/hosp/labevents.csv.gz | wc -l</code> command, while for the decompressed file labevents.csv, it only takes 15 sec to run the <code>wc -l labevents.csv</code> command. Compressed files save disk space, which is beneficial when dealing with large datasets. However, if we read from a compressed file (zcat), it will introduce additional processing time comparing to directly reading csv files.</p>
 <div class="cell" data-layout-align="center">
 <div class="sourceCode cell-code" id="cb24"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb24-1"><a href="#cb24-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Delete the csv file</span></span>
 <span id="cb24-2"><a href="#cb24-2" aria-hidden="true" tabindex="-1"></a><span class="fu">rm</span> ./labevents.csv</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
@@ -3522,7 +3525,7 @@ Su Mo Tu We Th Fr Sa
 <div class="cell" data-layout-align="center">
 <div class="sourceCode cell-code" id="cb38"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb38-1"><a href="#cb38-1" aria-hidden="true" tabindex="-1"></a><span class="fu">date</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
-<pre><code>Fri Jan 19 18:01:03 PST 2024</code></pre>
+<pre><code>Mon Jan 22 15:38:25 PST 2024</code></pre>
 </div>
 </div>
 <p><code>date</code> is used to display the current date and time.</p>
@@ -3550,7 +3553,7 @@ Su Mo Tu We Th Fr Sa
 <div class="cell" data-layout-align="center">
 <div class="sourceCode cell-code" id="cb46"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb46-1"><a href="#cb46-1" aria-hidden="true" tabindex="-1"></a><span class="fu">uptime</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
-<pre><code> 18:01:03 up  2:24,  1 user,  load average: 0.54, 0.30, 0.31</code></pre>
+<pre><code> 15:38:25 up 27 min,  1 user,  load average: 0.39, 0.10, 0.03</code></pre>
 </div>
 </div>
 <p><code>uptime</code> is used to check how long the system has been running and to display system load averages. The first output is the current time. The second output is how long the system has been running. The third output is the number of users currently logged on. The fourth output is the system load averages for the past 1, 5, and 15 minutes.</p>
@@ -3560,20 +3563,20 @@ Su Mo Tu We Th Fr Sa
 <pre><code>bowenzhangstats</code></pre>
 </div>
 </div>
-<p><code>whoami</code> is used to display the current user name. in Windows Subsystem for Linux, <code>who am i</code> does not work.</p>
+<p><code>whoami</code> is used to display the current user name. In Windows Subsystem for Linux, <code>who am i</code> does not work.</p>
 <div class="cell" data-layout-align="center">
 <div class="sourceCode cell-code" id="cb50"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb50-1"><a href="#cb50-1" aria-hidden="true" tabindex="-1"></a><span class="fu">who</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
-<pre><code>bowenzhangstats pts/1        2024-01-19 15:31</code></pre>
+<pre><code>bowenzhangstats pts/1        2024-01-22 15:12</code></pre>
 </div>
 </div>
 <p><code>who</code> is used to display the users who are currently logged in.</p>
 <div class="cell" data-layout-align="center">
 <div class="sourceCode cell-code" id="cb52"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb52-1"><a href="#cb52-1" aria-hidden="true" tabindex="-1"></a><span class="fu">w</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
-<pre><code> 18:01:03 up  2:24,  1 user,  load average: 0.54, 0.30, 0.31
+<pre><code> 15:38:25 up 27 min,  1 user,  load average: 0.39, 0.10, 0.03
 USER     TTY      FROM             LOGIN@   IDLE   JCPU   PCPU WHAT
-bowenzha pts/1    -                15:31    2:29m  0.04s  0.04s -bash</code></pre>
+bowenzha pts/1    -                15:12   25:35   0.03s  0.02s -bash</code></pre>
 </div>
 </div>
 <p><code>w</code> is used to display the information about the users currently on the machine, and their processes.</p>
@@ -3587,16 +3590,16 @@ bowenzha pts/1    -                15:31    2:29m  0.04s  0.04s -bash</code></pr
 <div class="cell" data-layout-align="center">
 <div class="sourceCode cell-code" id="cb56"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb56-1"><a href="#cb56-1" aria-hidden="true" tabindex="-1"></a><span class="fu">last</span> <span class="kw">|</span> <span class="fu">head</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
-<pre><code>bowenzha pts/1                         Fri Jan 19 15:31    gone - no logout
+<pre><code>bowenzha pts/1                         Mon Jan 22 15:12   still logged in
+reboot   system boot  5.15.133.1-micro Mon Jan 22 15:12   still running
+bowenzha pts/1                         Sun Jan 21 17:42 - crash  (21:30)
+reboot   system boot  5.15.133.1-micro Sun Jan 21 17:41   still running
+bowenzha pts/1                         Fri Jan 19 15:31 - crash (2+02:10)
 reboot   system boot  5.15.133.1-micro Fri Jan 19 15:31   still running
 bowenzha pts/1                         Fri Jan 19 09:29 - crash  (06:01)
 reboot   system boot  5.15.133.1-micro Fri Jan 19 09:29   still running
 root     pts/4                         Thu Jan 18 16:22 - crash  (17:07)
-bowenzha pts/1                         Thu Jan 18 13:38 - crash  (19:51)
-reboot   system boot  5.15.133.1-micro Thu Jan 18 13:38   still running
-bowenzha pts/1                         Tue Jan 16 13:21 - crash (2+00:17)
-reboot   system boot  5.15.133.1-micro Tue Jan 16 13:20   still running
-bowenzha pts/1                         Tue Jan 16 09:35 - crash  (03:45)</code></pre>
+bowenzha pts/1                         Thu Jan 18 13:38 - crash  (19:51)</code></pre>
 </div>
 </div>
 <p><code>last | head</code> is used to display the last 10 logins.</p>
@@ -3611,8 +3614,8 @@ bowenzha pts/1                         Tue Jan 16 09:35 - crash  (03:45)</code><
 <div class="sourceCode cell-code" id="cb60"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb60-1"><a href="#cb60-1" aria-hidden="true" tabindex="-1"></a><span class="bu">time</span> sleep 5</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>
-real    0m5.001s
-user    0m0.001s
+real    0m5.002s
+user    0m0.002s
 sys 0m0.000s</code></pre>
 </div>
 </div>
