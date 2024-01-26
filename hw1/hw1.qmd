@@ -24,7 +24,7 @@ knitr:
 Display machine information for reproducibility:
 
 ```{r}
-#| eval: false
+#| eval: true
 sessionInfo()
 ```
 
