@@ -1,7 +1,7 @@
 ---
 title: "Biostat 203B Homework 2"
 subtitle: Due Feb 9 @ 11:59PM
-author: "Your NAME and UID"
+author: "Bowen Zhang  UID:506126821"
 format:
   html:
     theme: cosmo
@@ -25,11 +25,15 @@ execute:
 
 Display machine information for reproducibility:
 ```{r}
+#| eval: true
+
 sessionInfo()
 ```
 
 Load necessary libraries (you can add more as needed).
 ```{r setup}
+#| eval: true
+
 library(arrow)
 library(data.table)
 library(memuse)
@@ -40,6 +44,8 @@ library(tidyverse)
 
 Display memory information of your computer
 ```{r}
+#| eval: true
+
 memuse::Sys.meminfo()
 ```
 
@@ -48,10 +54,14 @@ In this exercise, we explore various tools for ingesting the [MIMIC-IV](https://
 Display the contents of MIMIC `hosp` and `icu` data folders:
 
 ```{bash}
+#| eval: true
+
 ls -l ~/mimic/hosp/
 ```
 
 ```{bash}
+#| eval: true
+
 ls -l ~/mimic/icu/
 ```
 
@@ -61,20 +71,85 @@ ls -l ~/mimic/icu/
 
 There are quite a few utilities in R for reading plain text data files. Let us test the speed of reading a moderate sized compressed csv file, `admissions.csv.gz`, by three functions: `read.csv` in base R, `read_csv` in tidyverse, and `fread` in the data.table package.
 
-Which function is fastest? Is there difference in the (default) parsed data types? How much memory does each resultant dataframe or tibble use? (Hint: `system.time` measures run times; `pryr::object_size` measures memory usage.) 
+Which function is fastest? Is there difference in the (default) parsed data types? How much memory does each resultant dataframe or tibble use? (Hint: `system.time` measures run times; `pryr::object_size` measures memory usage.)
+
+**Answer: **
+
+```{r}
+#| eval: true
+
+# Read data using read.csv in base R
+system.time({
+  admissions <- read.csv("~/mimic/hosp/admissions.csv.gz")
+})
+
+pryr::object_size(admissions)
+
+admissions |> head(width = Inf)
+```
+
+```{r}
+#| eval: true
+
+rm(admissions)
+
+# Read data using read_csv in tidyverse
+system.time({
+  admissions <- read_csv("~/mimic/hosp/admissions.csv.gz")
+})
+
+pryr::object_size(admissions)
+
+admissions |> head(width = Inf)
+```
+
+```{r}
+#| eval: true
+
+rm(admissions)
+
+# Read data using fread in data.table
+system.time({
+  admissions <- fread("~/mimic/hosp/admissions.csv.gz")
+})
+
+pryr::object_size(admissions)
+
+admissions |> head(width = Inf)
+```
+`fread()` is the fastest, and `read.csv()` is the slowest among those three functions.
+
+The default parsed data types are different. 
+- For baseR `read.csv()` uses `int` for all integers and uses `chr` for all other columns including characters and time.
+- For yidyverse `read_csv()` uses `dbl` for all numerical columns, uses `chr` for characters and uses `S3: POSIXct` for dates and times.
+- For data.table `fread()` uses `int` for all integers, uses `chr` for characters, and uses `S3: POSIXct` for dates and times.
+
+The memory usage of `read.csv()` is 159 MB, the memory usage of `read_csv()` is 55 MB, and the memory usage of `fread()` is 50 MB.
 
 ### Q1.2 User-supplied data types
 
 Re-ingest `admissions.csv.gz` by indicating appropriate column data types in `read_csv`. Does the run time change? How much memory does the result tibble use? (Hint: `col_types` argument in `read_csv`.)
 
+**Answer: **
+
+```{r}
+#| eval: true
+
+# Have questions here!!!
+```
+
 ## Q2. Ingest big data files
 
 Let us focus on a bigger file, `labevents.csv.gz`, which is about 125x bigger than `admissions.csv.gz`.
 ```{bash}
+#| eval: true
+
 ls -l ~/mimic/hosp/labevents.csv.gz
 ```
 Display the first 10 lines of this file.
 ```{bash}
+#| eval: true
+
 zcat < ~/mimic/hosp/labevents.csv.gz | head -10
 ```
 
@@ -82,9 +157,46 @@ zcat < ~/mimic/hosp/labevents.csv.gz | head -10
 
 Try to ingest `labevents.csv.gz` using `read_csv`. What happens? If it takes more than 5 minutes on your computer, then abort the program and report your findings. 
 
+**Answer: **
+```{r}
+#| eval: false
+
+# DON'T RUN THIS CODE
+
+#rm(list = ls())
+
+# Read data using read_csv in tidyverse
+#system.time({
+#  labevents <- read_csv("~/mimic/hosp/labevents.csv.gz")
+#})
+
+#pypryr::object_size(labevents)
+```
+
+It takes more than 5 minutes on my laptop, and it crashed after that. The following is the screenshot of the error message. When trying to ingest the data, the memory usage of RStudio increases rapidly, and is over 7GB in the red circle in the screenshot. Then the RStudio crashes.
+![crash](./crash.jpg)
+
 ### Q2.2 Ingest selected columns of `labevents.csv.gz` by `read_csv`
 
 Try to ingest only columns `subject_id`, `itemid`, `charttime`, and `valuenum` in `labevents.csv.gz` using `read_csv`.  Does this solve the ingestion issue? (Hint: `col_select` argument in `read_csv`.)
+
+**Answer: **
+```{r}
+#| eval: false
+
+# DON'T RUN THIS CODE
+
+#system.time({
+#  labevents <- read_csv("~/mimic/hosp/labevents.csv.gz",
+#                        col_select = c("subject_id",
+#                                       "itemid",
+#                                       "charttime",
+#                                       "valuenum"))
+#})
+
+#pypr::object_size(labevents)
+```
+This does not solve the problem. It also takes more than 5 minutes, so I abort the program.
 
 ### Q2.3 Ingest subset of `labevents.csv.gz`
 
