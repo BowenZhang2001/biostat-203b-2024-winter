@@ -206,6 +206,48 @@ In later exercises, we will only be interested in the following lab items: creat
 
 Display the first 10 lines of the new file `labevents_filtered.csv.gz`. How many lines are in this new file? How long does it take `read_csv` to ingest `labevents_filtered.csv.gz`?
 
+**Answer: **
+```{bash}
+#| eval: false
+
+# DON'T RUN THIS CODE
+# Extract the required columns and rows from labevents.csv.gz
+zcat < ~/mimic/hosp/labevents.csv.gz | \
+awk -F, 'BEGIN{OFS=","} {
+  if ($5 == 50912 || $5 == 50971 || $5 == 50983 || $5 == 50902 ||
+      $5 == 50882 || $5 == 51221 || $5 == 51301 || $5 == 50931)
+  {
+    print $2,$5,$7,$10
+  }
+}' | gzip > labevents_filtered.csv.gz
+
+```
+
+```{bash}
+#| eval: true
+
+# Display the first 10 lines of the new file labevents_filtered.csv.gz
+zcat labevents_filtered.csv.gz | head -10
+```
+
+```{bash}
+#| eval: true
+
+# Show how many lines in this file
+zcat labevents_filtered.csv.gz | wc -l
+```
+
+```{r}
+#| eval: true
+# use read_csv() to ingest labevents_filtered.csv.gz
+system.time({
+  lab_filtered <- read_csv("labevents_filtered.csv.gz",
+                           col_names = c('subject_id','itemid',
+                                         'charttime','valuenum'))
+  })
+```
+There are 24855909 lines in this file. It takes 10 seconds to ingest the file.
+
 ### Q2.4 Ingest `labevents.csv` by Apache Arrow
 
 Our second strategy is to use [Apache Arrow](https://arrow.apache.org/) for larger-than-memory data analytics. Unfortunately Arrow does not work with gz files directly. First decompress `labevents.csv.gz` to `labevents.csv` and put it in the current working directory. To save render time, put `#| eval: false` at the beginning of this code chunk.
