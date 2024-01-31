@@ -91,8 +91,6 @@ admissions |> head(width = Inf)
 ```{r}
 #| eval: true
 
-rm(admissions)
-
 # Read data using read_csv in tidyverse
 system.time({
   admissions <- read_csv("~/mimic/hosp/admissions.csv.gz")
@@ -105,8 +103,6 @@ admissions |> head(width = Inf)
 
 ```{r}
 #| eval: true
-
-rm(admissions)
 
 # Read data using fread in data.table
 system.time({
@@ -135,8 +131,16 @@ Re-ingest `admissions.csv.gz` by indicating appropriate column data types in `re
 ```{r}
 #| eval: true
 
-# Have questions here!!!
+system.time({
+  admissions <- read_csv("~/mimic/hosp/admissions.csv.gz",
+                         col_types = 'ddTTTfdffffffTTl')
+})
+
+pryr::object_size(admissions)
+
+admissions |> head(width = Inf)
 ```
+After changing some character columns to factors, the memory usage of the result tibble is 41 MB, which is the less than the default data types. The run time is 1.5 seconds, which is also shorter than the default data types.
 
 ## Q2. Ingest big data files
 
@@ -227,14 +231,14 @@ awk -F, 'BEGIN{OFS=","} {
 #| eval: true
 
 # Display the first 10 lines of the new file labevents_filtered.csv.gz
-zcat labevents_filtered.csv.gz | head -10
+zcat < labevents_filtered.csv.gz | head -10
 ```
 
 ```{bash}
 #| eval: true
 
 # Show how many lines in this file
-zcat labevents_filtered.csv.gz | wc -l
+zcat < labevents_filtered.csv.gz | wc -l
 ```
 
 ```{r}
@@ -256,17 +260,121 @@ Then use [`arrow::open_dataset`](https://arrow.apache.org/docs/r/reference/open_
 
 Write a few sentences to explain what is Apache Arrow. Imagine you want to explain it to a layman in an elevator. 
 
+**Answer: **
+```{bash}
+#| eval: false
+
+# DON'T RUN THIS CODE
+# Decompress labevents.csv.gz to labevents.csv
+# zcat < ~/mimic/hosp/labevents.csv.gz > labevents.csv
+```
+
+```{r}
+#| eval: true
+
+# use arrow to ingest labevents.csv
+system.time({
+  lab_arrow <- arrow::open_dataset("labevents.csv", format = 'csv') |>
+    dplyr::select(subject_id, itemid, charttime, valuenum) %>%
+    dplyr::filter(itemid %in% c(50912, 50971, 50983, 50902,
+                                50882, 51221, 51301, 50931))
+})
+
+```
+```{r}
+#| eval: true
+
+# Display the number of rows and the first 10 rows of the result tibble
+nrow(lab_arrow)
+lab_arrow |> collect() |> head(10) 
+```
+Ingest+select+filter process takes 0.08 seconds. The number of rows and the first 10 rows of the result tibble match those in Q2.3.
+
+
+Apache Arrow is like a universal translator for data in the world of computers. It provides a standardized way to represent complex data structures in memory, and a common language for programs to exchange data with each other. It makes it possible for different programs to understand each other's data without having to convert it back and forth between different formats. This makes it easier to write programs that work with data from different sources, and to combine data from different programs into a single analysis.
+
 ### Q2.5 Compress `labevents.csv` to Parquet format and ingest/select/filter
 
 Re-write the csv file `labevents.csv` in the binary Parquet format (Hint: [`arrow::write_dataset`](https://arrow.apache.org/docs/r/reference/write_dataset.html).) How large is the Parquet file(s)? How long does the ingest+select+filter process of the Parquet file(s) take? Display the number of rows and the first 10 rows of the result tibble and make sure they match those in Q2.3. (Hint: use `dplyr` verbs for selecting columns and filtering rows.)
 
 Write a few sentences to explain what is the Parquet format. Imagine you want to explain it to a layman in an elevator.
 
+**Answer: **
+```{r}
+#| eval: false
+
+# write labevents.csv to Parquet format
+lab_arrow <- arrow::open_dataset("labevents.csv", format = 'csv')
+arrow::write_dataset(lab_arrow, "labevents.parquet", format = c('parquet'))
+```
+
+```{r}
+#| eval: true
+
+# check the size of the Parquet file
+
+file.info("labevents.parquet/part-0.parquet")$size / 1024^3
+```
+
+```{r}
+#| eval: true
+
+# use arrow to ingest labevents.parquet
+system.time({
+  lab_parquet <- arrow::open_dataset("labevents.parquet", format = 'parquet') |>
+    dplyr::select(subject_id, itemid, charttime, valuenum) %>%
+    dplyr::filter(itemid %in% c(50912, 50971, 50983, 50902,
+                                50882, 51221, 51301, 50931))
+})
+```
+
+```{r}
+#| eval: true
+
+# Display the number of rows and the first 10 rows of the result tibble
+nrow(lab_parquet)
+lab_parquet |> collect() |> head(10) 
+```
+
+The parquet file is 1.93 GB. The ingest+select+filter process of the Parquet file takes 0.3 seconds. The number of rows and the first 10 rows of the result tibble match those in Q2.3.
+
+Parquet is a file format for storing data. It packs data together in a smart way, making it lightning-fast for computers to read and process. It is designed to work well with distributed computing systems like Hadoop and Spark. Parquet files are organized into a columnar format, which means that each column of data is stored separately, making it easy to read and write only the data that is needed for a particular analysis.
+
 ### Q2.6 DuckDB
 
 Ingest the Parquet file, convert it to a DuckDB table by [`arrow::to_duckdb`](https://arrow.apache.org/docs/r/reference/to_duckdb.html), select columns, and filter rows as in Q2.5. How long does the ingest+convert+select+filter process take? Display the number of rows and the first 10 rows of the result tibble and make sure they match those in Q2.3. (Hint: use `dplyr` verbs for selecting columns and filtering rows.)
 
 Write a few sentences to explain what is DuckDB. Imagine you want to explain it to a layman in an elevator.
+
+**Answer: **
+```{r}
+#| eval: true
+
+# use arrow to convert labevents.parquet to DuckDB table
+system.time({
+  lab_duckdb <- arrow::open_dataset("labevents.parquet", format = 'parquet') |>
+    arrow::to_duckdb(table = "lab_duckdb") |>
+    dplyr::select(subject_id, itemid, charttime, valuenum) |>
+    dplyr::filter(itemid %in% c(50912, 50971, 50983, 50902,
+                                50882, 51221, 51301, 50931))
+})
+```
+
+```{r}
+#| eval: true
+
+# Display the number of rows and the first 10 rows of the result tibble
+lab_duckdb |> collect() |> nrow()
+lab_duckdb |> collect() |> head(10) 
+```
+```{r}
+#| eval: true
+
+# Show lab_duckdb sorted by subject_id in ascending order,
+# and print the first ten rows.
+lab_duckdb |> collect() |> arrange(subject_id) |> head(10)
+```
+
 
 ## Q3. Ingest and filter `chartevents.csv.gz`
 
