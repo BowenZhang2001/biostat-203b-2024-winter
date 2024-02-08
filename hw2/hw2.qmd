@@ -232,7 +232,9 @@ This does not solve the problem. It also takes more than 5 minutes, so I abort t
 ### Q2.3 Ingest subset of `labevents.csv.gz`
 
 <p align="center">
-  <img src="./linux_logo.png" width="20%">
+
+<img src="./linux_logo.png" width="20%"/>
+
 </p>
 
 Our first strategy to handle this big data file is to make a subset of the `labevents` data. Read the [MIMIC documentation](https://mimic.mit.edu/docs/iv/modules/hosp/labevents/) for the content in data file `labevents.csv`.
@@ -291,7 +293,9 @@ There are 24855909 lines in this file. It takes 10 seconds to ingest the file.
 ### Q2.4 Ingest `labevents.csv` by Apache Arrow
 
 <p align="center">
-  <img src="./arrow_logo.png" width="30%">
+
+<img src="./arrow_logo.png" width="30%"/>
+
 </p>
 
 Our second strategy is to use [Apache Arrow](https://arrow.apache.org/) for larger-than-memory data analytics. Unfortunately Arrow does not work with gz files directly. First decompress `labevents.csv.gz` to `labevents.csv` and put it in the current working directory. To save render time, put `#| eval: false` at the beginning of this code chunk.
@@ -331,16 +335,9 @@ nrow(lab_arrow)
 lab_arrow |> collect() |> head(10)
 ```
 
-```{r}
-#| eval: true
-
-lab_arrow |> collect() |> arrange(subject_id) |> head(10)
-
-```
-
 Ingest+select+filter process takes 0.08 seconds. The number of rows matches those in Q2.3.
 
-However, the first 10 rows of the result tibble do not match those in Q2.3. If we arrange the result tibble by `subject_id` in ascending order, `charttime` is 7 hours earlier than that in Q2.3. This is because the `charttime` in the result tibble is in local time zone, while the `charttime` in Q2.3 is considered as UTC time zone by default. The code below shows that is we turn the `charttime` to UTC time zone, the first 10 rows of the result tibble match those in Q2.3.
+The first 10 rows of the result tibble match those in Q2.3. However, `charttime` is 7 hours earlier than that in Q2.3. This is because the `charttime` in the result tibble is in local time zone, while the `charttime` in Q2.3 is considered as UTC time zone by default. The code below shows that is we turn the `charttime` to UTC time zone, the first 10 rows of the result tibble match those in Q2.3.
 
 ```{r}
 #| eval: true
@@ -354,7 +351,9 @@ Apache Arrow is like a universal translator for data in the world of computers. 
 ### Q2.5 Compress `labevents.csv` to Parquet format and ingest/select/filter
 
 <p align="center">
-  <img src="./parquet_logo.png" width="30%">
+
+<img src="./parquet_logo.png" width="30%"/>
+
 </p>
 
 Re-write the csv file `labevents.csv` in the binary Parquet format (Hint: [`arrow::write_dataset`](https://arrow.apache.org/docs/r/reference/write_dataset.html).) How large is the Parquet file(s)? How long does the ingest+select+filter process of the Parquet file(s) take? Display the number of rows and the first 10 rows of the result tibble and make sure they match those in Q2.3. (Hint: use `dplyr` verbs for selecting columns and filtering rows.)
@@ -376,7 +375,6 @@ arrow::write_dataset(lab_arrow, "labevents.parquet", format = c('parquet'))
 #| eval: true
 
 # check the size of the Parquet file
-
 file.info("labevents.parquet/part-0.parquet")$size / 1024^3
 ```
 
@@ -409,7 +407,9 @@ Parquet is a file format for storing data. It packs data together in a smart way
 ### Q2.6 DuckDB
 
 <p align="center">
-  <img src="./duckdb_logo.png" width="20%">
+
+<img src="./duckdb_logo.png" width="20%"/>
+
 </p>
 
 Ingest the Parquet file, convert it to a DuckDB table by [`arrow::to_duckdb`](https://arrow.apache.org/docs/r/reference/to_duckdb.html), select columns, and filter rows as in Q2.5. How long does the ingest+convert+select+filter process take? Display the number of rows and the first 10 rows of the result tibble and make sure they match those in Q2.3. (Hint: use `dplyr` verbs for selecting columns and filtering rows.)
