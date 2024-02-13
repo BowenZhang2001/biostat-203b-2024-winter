@@ -96,26 +96,39 @@ Hint: We need to pull information from data files `patients.csv.gz`, `admissions
 # We need to match the coding with actual name of procedures
 ## zcat < ~/mimic/hosp/d_icd_procedures.csv.gz | head
 
+
+### ADT -- transfers.csv.gz ###
+# We need subject_id, hadm_id, eventtype, careunit, intime, outtime
+## zcat < ~/mimic/hosp/transfers.csv.gz | head
 ```
 
+```{bash}
+#| eval: true
+
+# I have use symbolic link to make parquet file available at current location
+ls -l
+```
 
 ```{r}
 #| eval: true
 
 patient_id <- 10013310
-#patient_id <- 10001217
+patient_id <- 10001217
 
 # Read patients.csv.gz, and extract the info for title
-patients_info <- read_csv("~/mimic/hosp/patients.csv.gz") |>
+patients_info <- read_csv("~/mimic/hosp/patients.csv.gz",
+                          show_col_types = F) |>
   filter(subject_id == patient_id) |>
   select(subject_id, gender, anchor_age)
 
 # Read diagnoses_icd.csv.gz, and extract the info for subtitle
-patients_diagnose <- read_csv("~/mimic/hosp/diagnoses_icd.csv.gz") |>
+patients_diagnose <- read_csv("~/mimic/hosp/diagnoses_icd.csv.gz",
+                              show_col_types = F) |>
   filter(subject_id == patient_id & seq_num <= 3)
 
 # Read d_icd_diagnoses.csv.gz to get the name of diagnoses
-diagnoses <- read_csv("~/mimic/hosp/d_icd_diagnoses.csv.gz")
+diagnoses <- read_csv("~/mimic/hosp/d_icd_diagnoses.csv.gz",
+                      show_col_types = F)
 
 # Match the diagnose to the coding in patients_diagnose
 patients_diagnose <- left_join(patients_diagnose, diagnoses,
@@ -123,24 +136,100 @@ patients_diagnose <- left_join(patients_diagnose, diagnoses,
 rm(diagnoses)
 
 # Read procedures_icd.csv.gz, and extract the info for procedure
-patients_procedure <- read_csv("~/mimic/hosp/procedures_icd.csv.gz") |>
-  filter(subject_id == patient_id)
+patients_procedure <- read_csv("~/mimic/hosp/procedures_icd.csv.gz",
+                               show_col_types = F) |>
+  filter(subject_id == patient_id) |>
+  mutate(chartdate = as.POSIXct(chartdate))
 
 # Read d_icd_procedures.csv.gz to get the name of procedures
-procedure <- read_csv("~/mimic/hosp/d_icd_procedures.csv.gz")
+procedure <- read_csv("~/mimic/hosp/d_icd_procedures.csv.gz",
+                      show_col_types = F)
 
 # Match the procedure to the coding in patients_procedure
 patients_procedure <- left_join(patients_procedure, procedure,
-                                by = c("icd_code", "icd_version"))
+                                by = c("icd_code", "icd_version")) |>
+  mutate(Procedure = long_title) |>
+  select(-long_title)
+  
+
 rm(procedure)
 
 # Read admissions.csv.gz, and extract info for title(race)
-patients_info$race <- read_csv("~/mimic/hosp/admissions.csv.gz") |>
+patients_info$race <- read_csv("~/mimic/hosp/admissions.csv.gz",
+                               show_col_types = F) |>
   filter(subject_id == patient_id) |>
   select("race") |>
   distinct() %>% .$race
 
+# Read transfers.csv.gz, and extract info for ADT
+# Notice we need ICU/CCU, which can be detected from careunit
+patients_adt <- read_csv("~/mimic/hosp/transfers.csv.gz",
+                         show_col_types = F) |>
+  filter(subject_id == patient_id & eventtype != "discharge") |>
+  select(-"transfer_id") |>
+  arrange(intime) |>
+  mutate(ICU_CCU = str_detect(careunit, 'CU'))
 
+
+# Read labevents_pq, and extract info for Lab
+patients_lab <- arrow::open_dataset("./labevents_pq", format = 'parquet') |>
+  filter(subject_id == patient_id) |>
+  select(charttime) |>
+  collect() |>
+  distinct()
+
+# This is the function to get the title line
+generate_title <- function(info){
+  subject_id <- str_c("Patient ", as.character(info[1,"subject_id"]))
+  gender <- as.character(info[1, "gender"])
+  age <- str_c(as.character(info[1, "anchor_age"]), " years old")
+  return(str_c(subject_id, gender, age, str_to_lower(info[1, "race"]),
+               sep = ", "))
+}
+
+title <- generate_title(patients_info)
+
+subtitle <- str_c(patients_diagnose[1, "long_title"],
+                  patients_diagnose[2, "long_title"],
+                  patients_diagnose[3, "long_title"], sep = "\n")
+```
+
+```{r}
+#| eval: true
+
+# Draw the plot with the information above
+
+time_range <- c(patients_adt[[1, "intime"]],
+                patients_adt[[nrow(patients_adt), "outtime"]])
+
+empty_data <- tibble(CalenderTime = c(time_range, NA),
+                     Information = c("ADT", "Lab", "Procedure"))
+
+empty_data$Information <- factor(empty_data$Information,
+                                 levels = c("Procedure", "Lab", "ADT"))
+
+ggplot(empty_data, mapping = aes(x = CalenderTime, y = Information)) +
+  geom_blank() +
+  labs(x = "Calendar Time", y = "") +
+  geom_point(data = patients_lab, mapping = aes(x = charttime, y = "Lab"),
+             shape = 3, size = 2) +
+  geom_point(data = patients_procedure,
+             mapping = aes(x = chartdate,
+                           y = "Procedure",
+                           shape = Procedure),
+             size = 3) +
+  geom_segment(data = patients_adt, aes(x = intime, xend = outtime,
+                                        y = "ADT", yend = "ADT",
+                                        color = careunit,
+                                        linewidth = ICU_CCU)) +
+  theme_bw() +
+  theme(legend.position="bottom", legend.box = "vertical") +
+  guides(shape = guide_legend(nrow = 1, order = 1),
+         color = guide_legend(nrow = 1, order = 2, ),
+         linewidth = FALSE) +
+  labs(title = title,
+       subtitle = subtitle,
+       color = "Care Unit")
 ```
 
 ### Q1.2 ICU stays
