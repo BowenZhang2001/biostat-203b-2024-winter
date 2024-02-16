@@ -315,7 +315,9 @@ ggplot(data = vital) +
              show.legend = FALSE) +
   facet_grid(abbreviation ~ stay_id, scales = "free") +
   theme_light() +
-  labs(title = title, x = "", y = "")
+  labs(title = title, x = "", y = "") +
+    scale_x_datetime(date_labels = "%b %d %H:%M") +
+  guides(x = guide_axis(n.dodge = 2))
 ```
 
 ## Q2. ICU stays
@@ -333,6 +335,8 @@ Import `icustays.csv.gz` as a tibble `icustays_tble`.
 
 ```{r}
 #| eval: true
+
+rm(list = ls())
 
 icustays_tble <- read_csv("~/mimic/icu/icustays.csv.gz",
                           show_col_types = FALSE)
@@ -526,12 +530,36 @@ Hint: Use the Parquet format you generated in Homework 2. For reproducibility, m
 ```{r}
 #| eval: true
 
-icustays_tble <- arrow::open_dataset("labevents_pq", format = 'parquet') |>
-  dplyr::select(subject_id, itemid, hadm_id, storetime, valuenum) |>
-  dplyr::filter(itemid %in% c(50912, 50971, 50983, 50902,
-                              50882, 51221, 51301, 50931)) |>
-  collect()
+icu_id <- icustays_tble |>
+  select(subject_id) |>
+  distinct()
+
+labevents_tble <- arrow::open_dataset("labevents_pq", format = 'parquet') |>
+  select(subject_id, itemid, storetime, valuenum) |>
+  filter(itemid %in% c(50912, 50971, 50983, 50902,
+                       50882, 51221, 51301, 50931)) |>
+  filter(subject_id %in% icu_id$subject_id) |>
+  collect() |>
+  left_join(icustays_tble[,c("subject_id", "stay_id", "intime")],
+            by = "subject_id") |>
+  filter(storetime < intime) |>
+  group_by(stay_id, itemid) |>
+  slice_max(order_by = storetime, n = 1) |>
+  ungroup() |>
+  select(-c(storetime, intime)) |>
+  pivot_wider(names_from = itemid, values_from = valuenum, values_fill = NA) |>
+  arrange(subject_id) |>
+  rename(creatinine = `50912`, potassium = `50971`, sodium = `50983`,
+         chloride = `50902`, bicarbonate = `50882`, hematocrit = `51221`,
+         wbc = `51301`, glucose = `50931`) |>
+  select(subject_id, stay_id, bicarbonate, chloride, creatinine,
+         glucose, potassium, sodium, hematocrit, wbc) |>
+  mutate(across(everything(), ~ replace_na(., NA)))
+  
+head(labevents_tble, width = Inf)
 ```
+
+
 
 ## Q6. Vitals from charted events
 
