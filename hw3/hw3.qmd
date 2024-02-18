@@ -18,7 +18,7 @@ execute:
 Display machine information for reproducibility:
 
 ```{r}
-#|eval = True
+#|eval: True
 
 sessionInfo()
 ```
@@ -544,34 +544,37 @@ labevents_tble <- arrow::open_dataset("labevents_pq", format = 'parquet') |>
             by = "subject_id") |>
   filter(storetime < intime) |>
   group_by(stay_id, itemid) |>
-  slice_max(order_by = storetime, n = 1) |>
+  slice_max(order_by = storetime, n = 1, with_ties = FALSE) |>
   ungroup() |>
   select(-c(storetime, intime)) |>
-  pivot_wider(names_from = itemid, values_from = valuenum, values_fill = NA) |>
+  pivot_wider(names_from = itemid, values_from = valuenum) |>
   arrange(subject_id) |>
   rename(creatinine = `50912`, potassium = `50971`, sodium = `50983`,
          chloride = `50902`, bicarbonate = `50882`, hematocrit = `51221`,
          wbc = `51301`, glucose = `50931`) |>
   select(subject_id, stay_id, bicarbonate, chloride, creatinine,
-         glucose, potassium, sodium, hematocrit, wbc) |>
-  mutate(across(everything(), ~ replace_na(., NA)))
+         glucose, potassium, sodium, hematocrit, wbc)
   
 head(labevents_tble, width = Inf)
 ```
 
-
+Notice that For patient 10171405, stay_id 30517917, the patient's lab result has two different result at the same storetime. So I include the first result in the final table.
 
 ## Q6. Vitals from charted events
 
 `chartevents.csv.gz` (<https://mimic.mit.edu/docs/iv/modules/icu/chartevents/>) contains all the charted data available for a patient. During their ICU stay, the primary repository of a patient’s information is their electronic chart. The `itemid` variable indicates a single measurement type in the database. The `value` variable is the value measured for `itemid`. The first 10 lines of `chartevents.csv.gz` are
 
 ```{bash}
+#| eval: true
+
 zcat < ~/mimic/icu/chartevents.csv.gz | head
 ```
 
 `d_items.csv.gz` (<https://mimic.mit.edu/docs/iv/modules/icu/d_items/>) is the dictionary for the `itemid` in `chartevents.csv.gz`.
 
 ```{bash}
+#| eval: true
+
 zcat < ~/mimic/icu/d_items.csv.gz | head
 ```
 
@@ -580,6 +583,51 @@ We are interested in the vitals for ICU patients: heart rate (220045), systolic 
 ![](chartevents_tble.png)
 
 Hint: Use the Parquet format you generated in Homework 2. For reproducibility, make `chartevents_pq` folder available at the current working directory, for example, by a symbolic link.
+
+**Answer: **
+
+```{bash}
+#| eval: false
+
+# Don't run this code, it takes too much  time and space
+# Decompress the chartevents.csv.gz in order to turn it into parquet format
+zcat < ~/mimic/icu/chartevents.csv.gz > chartevents.csv
+```
+
+```{r}
+#| eval: false
+
+# Don't run this code, it takes too much  time and space
+
+# Read the chartevents.csv, and turn it into parquet format
+lab_arrow <- arrow::open_dataset("chartevents.csv", format = 'csv')
+arrow::write_dataset(lab_arrow, "chartevents_pq", format = c('parquet'))
+```
+
+```{r}
+#| eval: true
+
+rm(icu_id)
+
+chartevents_tble <- arrow::open_dataset("chartevents_pq", format = 'parquet') |>
+  select(subject_id, itemid, charttime, valuenum) |>
+  filter(itemid %in% c(220045, 220179, 220180, 223761, 220210)) |>
+  collect() |>
+  left_join(icustays_tble[,c("subject_id", "stay_id", "intime", "outtime")],
+            by = "subject_id") |>
+  filter(charttime >= intime & charttime <= outtime) |>
+  group_by(stay_id, itemid) |>
+  slice_min(order_by = charttime, n = 1, with_ties = FALSE) |>
+  ungroup() |>
+  select(-c(charttime, intime)) |>
+  pivot_wider(names_from = itemid, values_from = valuenum) |>
+  arrange(subject_id) |>
+  rename(heartrate = `220045`, nbps = `220179`, nbpd = `220180`,
+         temperature = `223761`, rr = `220210`) |>
+  select(subject_id, stay_id, heartrate, nbps, nbpd, rr, temperature)
+
+head(chartevents_tble, width = Inf)
+```
 
 ## Q7. Putting things together
 
@@ -594,6 +642,22 @@ Let us create a tibble `mimic_icu_cohort` for all ICU stays, where rows are all 
 The final `mimic_icu_cohort` should have one row per ICU stay and columns for each variable.
 
 ![](mimic_icu_cohort.png)
+**Answer: **
+
+```{r}
+#| eval: true
+
+mimic_icu_cohort <- left_join(icustays_tble, admission_tble,
+                              by = c("subject_id", "hadm_id")) |>
+  left_join(patients_tble, by = "subject_id") |>
+  filter((anchor_age + as.numeric(year(intime)) - anchor_year) >= 18) |>
+  left_join(labevents_tble, by = c("subject_id", "stay_id")) |>
+  left_join(chartevents_tble, by = c("subject_id", "stay_id")) |>
+  mutate(age_intime = anchor_age + as.numeric(year(intime)) - anchor_year)
+
+head(mimic_icu_cohort, width = Inf)
+```
+
 
 ## Q8. Exploratory data analysis (EDA)
 
@@ -606,3 +670,174 @@ Summarize the following information about the ICU stay cohort `mimic_icu_cohort`
 -   Length of ICU stay `los` vs the average vital measurements within the first hour of ICU stay
 
 -   Length of ICU stay `los` vs first ICU unit
+
+**Answer: **
+
+```{r}
+#| eval: true
+
+# Length of ICU stay `los` vs demographic variables
+# (race, insurance, marital_status, gender, age at intime)
+
+race_los <- mimic_icu_cohort |>
+  select(los, race) |>
+  group_by(race) |>
+  summarize(mean_los = mean(los, na.rm = TRUE), std_los = sd(los, na.rm = TRUE),
+            q25_los = quantile(los, 0.25, na.rm = TRUE),
+            q50_los = median(los, na.rm = TRUE),
+            q75_los = quantile(los, 0.75, na.rm = TRUE))
+
+race_los
+
+race_los |>
+  ggplot(aes(x = mean_los, y = reorder(race, mean_los))) +
+  geom_point(size = 2) +
+  theme_bw() +
+  theme(panel.grid.major.x = element_blank(),
+        panel.grid.minor.x = element_blank(),
+        panel.grid.major.y = element_line(color = "grey80",
+                                          linetype = "dashed")) +
+  labs(x = "Mean length of ICU stay", y ="")
+```
+```{r}
+#| eval: true
+
+# Length of ICU stay `los` vs insurance
+
+ggplot(mimic_icu_cohort, aes(x = los, fill = insurance)) +
+  geom_density(alpha = 0.5) +
+  labs(x = "LOS", y = "Density", title = "Distribution of LOS by Insurance") +
+  scale_fill_discrete(name = "Insurance") +
+  facet_wrap(~ insurance, ncol = 1)
+
+```
+```{r}
+#| eval: true
+
+# Length of ICU stay `los` vs insurance
+
+ggplot(mimic_icu_cohort, aes(x = los, fill = marital_status)) +
+  geom_density(alpha = 0.5) +
+  labs(x = "LOS", y = "Density", title = "Distribution of LOS by Marital_status") +
+  scale_fill_discrete(name = "Marital_status") +
+  facet_wrap(~ marital_status, ncol = 1)
+
+```
+
+```{r}
+#| eval: true
+
+# Length of ICU stay `los` vs gender
+
+ggplot(mimic_icu_cohort, aes(x = los, fill = gender)) +
+  geom_density(alpha = 0.5) +
+  labs(x = "LOS", y = "Density", title = "Distribution of LOS by Gender") +
+  scale_fill_discrete(name = "Marital_status") +
+  facet_wrap(~ gender, ncol = 1)
+```
+
+
+```{r}
+#| eval: true
+
+# Length of ICU stay vs age at intime
+ggplot(mimic_icu_cohort, aes(x = age_intime, y = los)) +
+  geom_point(alpha = 0.05) +
+  labs(x = "Age at intime", y = "LOS")
+```
+
+```{r}
+#| eval: true
+  
+# Length of ICU stay vs the last available lab measurements before ICU stay
+
+plot_1 <- ggplot(mimic_icu_cohort, aes(x = creatinine, y = los)) +
+  geom_point(alpha = 0.05) +
+  labs(x = "Creatinine", y = "LOS")
+
+plot_2 <- ggplot(mimic_icu_cohort, aes(x = potassium, y = los)) +
+  geom_point(alpha = 0.05) +
+  labs(x = "Potassium", y = "LOS")
+
+plot_3 <- ggplot(mimic_icu_cohort, aes(x = sodium, y = los)) +
+  geom_point(alpha = 0.05) +
+  labs(x = "Sodium", y = "LOS")
+
+plot_4 <- ggplot(mimic_icu_cohort, aes(x = chloride, y = los)) +
+  geom_point(alpha = 0.05) +
+  labs(x = "Chloride", y = "LOS")
+
+plot_5 <- ggplot(mimic_icu_cohort, aes(x = bicarbonate, y = los)) +
+  geom_point(alpha = 0.05) +
+  labs(x = "Bicarbonate", y = "LOS")
+
+plot_6 <- ggplot(mimic_icu_cohort, aes(x = hematocrit, y = los)) +
+  geom_point(alpha = 0.05) +
+  labs(x = "Hematocrit", y = "LOS")
+
+plot_7 <- ggplot(mimic_icu_cohort, aes(x = wbc, y = los)) +
+  geom_point(alpha = 0.05) +
+  labs(x = "WBC", y = "LOS")
+
+plot_8 <- ggplot(mimic_icu_cohort, aes(x = glucose, y = los)) +
+  geom_point(alpha = 0.05) +
+  labs(x = "Glucose", y = "LOS")
+
+gridExtra::grid.arrange(plot_1, plot_2, plot_3, plot_4,
+                        plot_5, plot_6, plot_7, plot_8, ncol = 2)
+
+```
+
+```{r}
+#| eval: true
+
+# Length of ICU stay vs first vital measurement within the ICU stay
+
+plot_1 <- ggplot(mimic_icu_cohort, aes(x = heartrate, y = los)) +
+  geom_point(alpha = 0.05) +
+  labs(x = "Heartrate", y = "LOS")
+
+plot_2 <- ggplot(mimic_icu_cohort, aes(x = nbps, y = los)) +
+  geom_point(alpha = 0.05) +
+  labs(x = "NBPS", y = "LOS")
+
+plot_3 <- ggplot(mimic_icu_cohort, aes(x = nbpd, y = los)) +
+  geom_point(alpha = 0.05) +
+  labs(x = "NBPD", y = "LOS")
+
+plot_4 <- ggplot(mimic_icu_cohort, aes(x = temperature, y = los)) +
+  geom_point(alpha = 0.05) +
+  labs(x = "Temperature", y = "LOS")
+
+plot_5 <- ggplot(mimic_icu_cohort, aes(x = rr, y = los)) +
+  geom_point(alpha = 0.05) +
+  labs(x = "RR", y = "LOS")
+
+gridExtra::grid.arrange(plot_1, plot_2, plot_3, plot_4, plot_5, ncol = 2)
+```
+
+```{r}
+#| eval: true
+
+# Length of ICU stay vs first ICU unit
+
+unit_los <- mimic_icu_cohort |>
+  select(los, first_careunit) |>
+  group_by(first_careunit) |>
+  summarize(mean_los = mean(los, na.rm = TRUE), std_los = sd(los, na.rm = TRUE),
+            q25_los = quantile(los, 0.25, na.rm = TRUE),
+            q50_los = median(los, na.rm = TRUE),
+            q75_los = quantile(los, 0.75, na.rm = TRUE))
+
+unit_los
+
+unit_los |>
+  ggplot(aes(x = mean_los, y = reorder(first_careunit, mean_los))) +
+  geom_point(size = 2) +
+  theme_bw() +
+  theme(panel.grid.major.x = element_blank(),
+        panel.grid.minor.x = element_blank(),
+        panel.grid.major.y = element_line(color = "grey80",
+                                          linetype = "dashed")) +
+  labs(x = "first ICU Unit", y ="")
+```
