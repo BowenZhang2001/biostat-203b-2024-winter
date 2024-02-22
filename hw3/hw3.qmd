@@ -18,7 +18,7 @@ execute:
 Display machine information for reproducibility:
 
 ```{r}
-#|eval: True
+#| eval: true
 
 sessionInfo()
 ```
@@ -38,6 +38,8 @@ library(tidyverse)
 Display your machine memory.
 
 ```{r}
+#| eval: true
+
 memuse::Sys.meminfo()
 ```
 
@@ -125,6 +127,7 @@ patients_info <- read_csv("~/mimic/hosp/patients.csv.gz",
 # Read diagnoses_icd.csv.gz, and extract the info for subtitle
 patients_diagnose <- read_csv("~/mimic/hosp/diagnoses_icd.csv.gz",
                               show_col_types = F) |>
+  # We only need top 3 diagnoses
   filter(subject_id == patient_id & seq_num <= 3)
 
 # Read d_icd_diagnoses.csv.gz to get the name of diagnoses
@@ -140,6 +143,7 @@ rm(diagnoses)
 patients_procedure <- read_csv("~/mimic/hosp/procedures_icd.csv.gz",
                                show_col_types = F) |>
   filter(subject_id == patient_id) |>
+  # Make chartdate as POSIXct in order to draw the plot
   mutate(chartdate = as.POSIXct(chartdate))
 
 # Read d_icd_procedures.csv.gz to get the name of procedures
@@ -149,8 +153,8 @@ procedure <- read_csv("~/mimic/hosp/d_icd_procedures.csv.gz",
 # Match the procedure to the coding in patients_procedure
 patients_procedure <- left_join(patients_procedure, procedure,
                                 by = c("icd_code", "icd_version")) |>
+  # long_title is not good to display, change it to a shorter one
   mutate(Procedure = str_extract(long_title, "[^,]+"))
-  
 
 rm(procedure)
 
@@ -166,8 +170,9 @@ patients_info$race <- read_csv("~/mimic/hosp/admissions.csv.gz",
 patients_adt <- read_csv("~/mimic/hosp/transfers.csv.gz",
                          show_col_types = F) |>
   filter(subject_id == patient_id & eventtype != "discharge") |>
-  select(-"transfer_id") |>
+  select(-transfer_id) |>
   arrange(intime) |>
+  # both ICU and CCU have the letters "CU", so we can use it to detect
   mutate(ICU_CCU = str_detect(careunit, 'CU'))
 
 
@@ -180,7 +185,7 @@ patients_lab <- arrow::open_dataset("./labevents_pq", format = 'parquet') |>
 
 # This is the function to get the title line
 generate_title <- function(info){
-  subject_id <- str_c("Patient ", as.character(info[1,"subject_id"]))
+  subject_id <- str_c("Patient ", as.character(info[1, "subject_id"]))
   gender <- as.character(info[1, "gender"])
   age <- str_c(as.character(info[1, "anchor_age"]), " years old")
   return(str_c(subject_id, gender, age, str_to_lower(info[1, "race"]),
@@ -209,6 +214,7 @@ number_of_procedure <- patients_procedure |>
 
 # Draw the plot with the information above
 
+# Build a blank data to set the range of the x-axis
 time_range <- c(patients_adt[[1, "intime"]],
                 patients_adt[[nrow(patients_adt), "outtime"]])
 
@@ -218,6 +224,7 @@ empty_data <- tibble(CalenderTime = c(time_range, NA),
 empty_data$Information <- factor(empty_data$Information,
                                  levels = c("Procedure", "Lab", "ADT"))
 
+# Draw plot on the blank sheet
 ggplot(empty_data, mapping = aes(x = CalenderTime, y = Information)) +
   geom_blank() +
   geom_point(data = patients_lab, mapping = aes(x = charttime, y = "Lab"),
@@ -227,21 +234,26 @@ ggplot(empty_data, mapping = aes(x = CalenderTime, y = Information)) +
                            y = "Procedure",
                            shape = Procedure),
              size = 3) +
-  geom_segment(data = patients_adt, aes(x = intime, xend = outtime,
-                                        y = "ADT", yend = "ADT",
-                                        color = careunit,
-                                        linewidth = ICU_CCU)) +
+  geom_segment(data = patients_adt,
+               mapping = aes(x = intime, xend = outtime,
+                             y = "ADT", yend = "ADT",
+                             color = careunit,
+                             linewidth = ICU_CCU)) +
   theme_bw() +
+  # legend.position = "bottom" is to put the legend at the bottom
+  # legend.box = "vertical" is to arrange legend shape & color vertically
   theme(legend.position="bottom", legend.box = "vertical",
         text = element_text(size = 8)) +
+  # shape is on the top and color below, no linewidth legend
   guides(shape = guide_legend(ncol = 2, order = 1),
          color = guide_legend(ncol = 2, order = 2),
          linewidth = FALSE) +
+  # the name of the color.legend should be Care Unit
   labs(title = title,
        subtitle = subtitle,
        color = "Care Unit",
        x = "Calendar Time", y = "") +
-   scale_shape_manual(values = c(1:number_of_procedure))
+  scale_shape_manual(values = c(1:number_of_procedure))
 ```
 Notice that, this patient has been admitted to the hospital three times, and each hospitalization has different diagnoses. Thus, we choose the top 3 diagnoses of the first hospitalization. Since the name of those procedures are too long, I use a shortened version. In addition, there are 9 kinds of procedures in this patients, so it is not a good idea to put all the procedures on the plot, since is it hard to differentiate the legend. The better idea is to select the most important ones according to some medical knowledge. However, for this plot, I just simply put everything on it.
 
@@ -317,6 +329,7 @@ ggplot(data = vital) +
   theme_light() +
   labs(title = title, x = "", y = "") +
     scale_x_datetime(date_labels = "%b %d %H:%M") +
+  # This function make the x_axis more readable
   guides(x = guide_axis(n.dodge = 2))
 ```
 
@@ -341,7 +354,7 @@ rm(list = ls())
 icustays_tble <- read_csv("~/mimic/icu/icustays.csv.gz",
                           show_col_types = FALSE)
 
-head(icustays_tble, width = Inf)
+print(icustays_tble, width = Inf)
 ```
 
 ### Q2.2 Summary and visualization
@@ -390,7 +403,7 @@ Import `admissions.csv.gz` as a tibble `admissions_tble`.
 admission_tble <- read_csv("~/mimic/hosp/admissions.csv.gz",
                            show_col_types = FALSE)
 
-head(admission_tble, width = Inf)
+print(admission_tble, width = Inf)
 ```
 
 ### Q3.2 Summary and visualization
@@ -470,7 +483,7 @@ Import `patients.csv.gz` (<https://mimic.mit.edu/docs/iv/modules/hosp/patients/>
 
 patients_tble <- read_csv("~/mimic/hosp/patients.csv.gz",
                           show_col_types = FALSE)
-head(patients_tble, width = Inf)
+print(patients_tble, width = Inf)
 ```
 
 ### Q4.2 Summary and visualization
@@ -486,7 +499,7 @@ Summarize variables `gender` and `anchor_age` by graphics, and explain any patte
 patients_tble |>
   ggplot(aes(x = factor(gender), y = anchor_age, fill = gender)) +
   geom_violin(trim = FALSE) +
-  scale_fill_manual(values = c("pink","lightblue")) +
+  scale_fill_manual(values = c("pink", "lightblue")) +
   facet_grid(. ~ gender, scales = "free_x")
 ```
 ```{r}
@@ -530,35 +543,55 @@ Hint: Use the Parquet format you generated in Homework 2. For reproducibility, m
 ```{r}
 #| eval: true
 
+# Get the name of the lab items
+items_id <- c(50912, 50971, 50983, 50902, 50882, 51221, 51301, 50931)
+lab_items <- read_csv("~/mimic/hosp/d_labitems.csv.gz",
+                      show_col_types = FALSE) |>
+  filter(itemid %in% items_id) |>
+  select(itemid, label)
+lab_items <- setNames(lab_items$label, lab_items$itemid)
+
+
+# icu_id is the subject_id of patients went to ICU
 icu_id <- icustays_tble |>
   select(subject_id) |>
   distinct()
 
 labevents_tble <- arrow::open_dataset("labevents_pq", format = 'parquet') |>
   select(subject_id, itemid, storetime, valuenum) |>
-  filter(itemid %in% c(50912, 50971, 50983, 50902,
-                       50882, 51221, 51301, 50931)) |>
+  
+  # filter the labevents we are interested in
+  filter(itemid %in% items_id) |>
+  
+  # only keep the labevents of patients went to ICU
   filter(subject_id %in% icu_id$subject_id) |>
   collect() |>
+  
+  # Two dataset shares the same subject_id, stay_id, and intime
   left_join(icustays_tble[,c("subject_id", "stay_id", "intime")],
             by = "subject_id") |>
+  
+  # only keep the labevents before the ICU stay
   filter(storetime < intime) |>
   group_by(stay_id, itemid) |>
-  slice_max(order_by = storetime, n = 1, with_ties = FALSE) |>
+  
+  # only keep the last labevents before the ICU stay
+  arrange(storetime, .by_group = TRUE) |>
+  slice_tail(n = 1) |>
+  
   ungroup() |>
   select(-c(storetime, intime)) |>
   pivot_wider(names_from = itemid, values_from = valuenum) |>
   arrange(subject_id) |>
-  rename(creatinine = `50912`, potassium = `50971`, sodium = `50983`,
-         chloride = `50902`, bicarbonate = `50882`, hematocrit = `51221`,
-         wbc = `51301`, glucose = `50931`) |>
-  select(subject_id, stay_id, bicarbonate, chloride, creatinine,
-         glucose, potassium, sodium, hematocrit, wbc)
-  
-head(labevents_tble, width = Inf)
+  rename_with(~lab_items[.x], .cols = -c(subject_id, stay_id)) |>
+  select(subject_id, stay_id, Bicarbonate, Chloride, Creatinine,
+         Glucose, Potassium, Sodium, Hematocrit, `White Blood Cells`)
+
+rm(lab_items, items_id)
+print(labevents_tble, width = Inf)
 ```
 
-Notice that For patient 10171405, stay_id 30517917, the patient's lab result has two different result at the same storetime. So I include the first result in the final table.
+Notice that For patient 10171405, stay_id 30517917, the patient's lab result has two different result at the same storetime. So I include the second result in the final table.
 
 ## Q6. Vitals from charted events
 
@@ -609,24 +642,45 @@ arrow::write_dataset(lab_arrow, "chartevents_pq", format = c('parquet'))
 
 rm(icu_id)
 
+# Get the item_id of the vitals
+vitals_id <- c(220045, 220179, 220180, 223761, 220210)
+
+# Get the name of the vitals
+vitals <- read_csv("~/mimic/icu/d_items.csv.gz",
+                   show_col_types = FALSE) |>
+  filter(itemid %in% vitals_id) |>
+  select(itemid, abbreviation)
+
+vitals <- setNames(vitals$abbreviation, vitals$itemid)
+
+
 chartevents_tble <- arrow::open_dataset("chartevents_pq", format = 'parquet') |>
   select(subject_id, itemid, charttime, valuenum) |>
-  filter(itemid %in% c(220045, 220179, 220180, 223761, 220210)) |>
+  
+  # filter the chartevents we are interested in
+  filter(itemid %in% vitals_id) |>
   collect() |>
+  
+  # two dataset shares the same subject_id, stay_id, intime, and outtime
   left_join(icustays_tble[,c("subject_id", "stay_id", "intime", "outtime")],
             by = "subject_id") |>
+  
+  # only keep the chartevents during the ICU stay
   filter(charttime >= intime & charttime <= outtime) |>
   group_by(stay_id, itemid) |>
-  slice_min(order_by = charttime, n = 1, with_ties = FALSE) |>
+  
+  # only keep the first chartevents during the ICU stay
+  arrange(desc(charttime), .by_group = TRUE) |>
+  slice_tail(n = 1) |>
   ungroup() |>
   select(-c(charttime, intime)) |>
   pivot_wider(names_from = itemid, values_from = valuenum) |>
   arrange(subject_id) |>
-  rename(heartrate = `220045`, nbps = `220179`, nbpd = `220180`,
-         temperature = `223761`, rr = `220210`) |>
-  select(subject_id, stay_id, heartrate, nbps, nbpd, rr, temperature)
+  rename_with(~vitals[.x], .cols = -c(subject_id, stay_id, outtime)) |>
+  select(subject_id, stay_id, HR, NBPs, NBPd, RR, `Temperature F`)
 
-head(chartevents_tble, width = Inf)
+rm(vitals, vitals_id)
+print(chartevents_tble, width = Inf)
 ```
 
 ## Q7. Putting things together
@@ -650,12 +704,16 @@ The final `mimic_icu_cohort` should have one row per ICU stay and columns for ea
 mimic_icu_cohort <- left_join(icustays_tble, admission_tble,
                               by = c("subject_id", "hadm_id")) |>
   left_join(patients_tble, by = "subject_id") |>
+  
+  # only keep the ICU stays of adults
   filter((anchor_age + as.numeric(year(intime)) - anchor_year) >= 18) |>
   left_join(labevents_tble, by = c("subject_id", "stay_id")) |>
   left_join(chartevents_tble, by = c("subject_id", "stay_id")) |>
+  
+  # calculate the age at intime
   mutate(age_intime = anchor_age + as.numeric(year(intime)) - anchor_year)
 
-head(mimic_icu_cohort, width = Inf)
+print(mimic_icu_cohort, width = Inf)
 ```
 
 
@@ -751,35 +809,35 @@ ggplot(mimic_icu_cohort, aes(x = age_intime, y = los)) +
   
 # Length of ICU stay vs the last available lab measurements before ICU stay
 
-plot_1 <- ggplot(mimic_icu_cohort, aes(x = creatinine, y = los)) +
+plot_1 <- ggplot(mimic_icu_cohort, aes(x = Creatinine, y = los)) +
   geom_point(alpha = 0.05) +
   labs(x = "Creatinine", y = "LOS")
 
-plot_2 <- ggplot(mimic_icu_cohort, aes(x = potassium, y = los)) +
+plot_2 <- ggplot(mimic_icu_cohort, aes(x = Potassium, y = los)) +
   geom_point(alpha = 0.05) +
   labs(x = "Potassium", y = "LOS")
 
-plot_3 <- ggplot(mimic_icu_cohort, aes(x = sodium, y = los)) +
+plot_3 <- ggplot(mimic_icu_cohort, aes(x = Sodium, y = los)) +
   geom_point(alpha = 0.05) +
   labs(x = "Sodium", y = "LOS")
 
-plot_4 <- ggplot(mimic_icu_cohort, aes(x = chloride, y = los)) +
+plot_4 <- ggplot(mimic_icu_cohort, aes(x = Chloride, y = los)) +
   geom_point(alpha = 0.05) +
   labs(x = "Chloride", y = "LOS")
 
-plot_5 <- ggplot(mimic_icu_cohort, aes(x = bicarbonate, y = los)) +
+plot_5 <- ggplot(mimic_icu_cohort, aes(x = Bicarbonate, y = los)) +
   geom_point(alpha = 0.05) +
   labs(x = "Bicarbonate", y = "LOS")
 
-plot_6 <- ggplot(mimic_icu_cohort, aes(x = hematocrit, y = los)) +
+plot_6 <- ggplot(mimic_icu_cohort, aes(x = Hematocrit, y = los)) +
   geom_point(alpha = 0.05) +
   labs(x = "Hematocrit", y = "LOS")
 
-plot_7 <- ggplot(mimic_icu_cohort, aes(x = wbc, y = los)) +
+plot_7 <- ggplot(mimic_icu_cohort, aes(x = `White Blood Cells`, y = los)) +
   geom_point(alpha = 0.05) +
   labs(x = "WBC", y = "LOS")
 
-plot_8 <- ggplot(mimic_icu_cohort, aes(x = glucose, y = los)) +
+plot_8 <- ggplot(mimic_icu_cohort, aes(x = Glucose, y = los)) +
   geom_point(alpha = 0.05) +
   labs(x = "Glucose", y = "LOS")
 
@@ -793,23 +851,23 @@ gridExtra::grid.arrange(plot_1, plot_2, plot_3, plot_4,
 
 # Length of ICU stay vs first vital measurement within the ICU stay
 
-plot_1 <- ggplot(mimic_icu_cohort, aes(x = heartrate, y = los)) +
+plot_1 <- ggplot(mimic_icu_cohort, aes(x = HR, y = los)) +
   geom_point(alpha = 0.05) +
   labs(x = "Heartrate", y = "LOS")
 
-plot_2 <- ggplot(mimic_icu_cohort, aes(x = nbps, y = los)) +
+plot_2 <- ggplot(mimic_icu_cohort, aes(x = NBPs, y = los)) +
   geom_point(alpha = 0.05) +
   labs(x = "NBPS", y = "LOS")
 
-plot_3 <- ggplot(mimic_icu_cohort, aes(x = nbpd, y = los)) +
+plot_3 <- ggplot(mimic_icu_cohort, aes(x = NBPd, y = los)) +
   geom_point(alpha = 0.05) +
   labs(x = "NBPD", y = "LOS")
 
-plot_4 <- ggplot(mimic_icu_cohort, aes(x = temperature, y = los)) +
+plot_4 <- ggplot(mimic_icu_cohort, aes(x = `Temperature F`, y = los)) +
   geom_point(alpha = 0.05) +
   labs(x = "Temperature", y = "LOS")
 
-plot_5 <- ggplot(mimic_icu_cohort, aes(x = rr, y = los)) +
+plot_5 <- ggplot(mimic_icu_cohort, aes(x = RR, y = los)) +
   geom_point(alpha = 0.05) +
   labs(x = "RR", y = "LOS")
 
