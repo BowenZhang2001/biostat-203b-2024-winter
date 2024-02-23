@@ -33,6 +33,14 @@ library(memuse)
 library(pryr)
 library(R.utils)
 library(tidyverse)
+library(reshape2)
+
+if (!require(ggunchained)) {
+  library(devtools)
+  install_github("JanCoUnchained/ggunchained")
+}
+library(ggunchained)
+
 ```
 
 Display your machine memory.
@@ -497,10 +505,12 @@ Summarize variables `gender` and `anchor_age` by graphics, and explain any patte
 
 # Use violin plot to show the distribution
 patients_tble |>
-  ggplot(aes(x = factor(gender), y = anchor_age, fill = gender)) +
-  geom_violin(trim = FALSE) +
+  select(gender, anchor_age) |>
+  melt(id.vars = "gender") |>
+  ggplot(aes(x = variable, y = value, fill = gender)) +
+  geom_split_violin(trim = FALSE) +
   scale_fill_manual(values = c("pink", "lightblue")) +
-  facet_grid(. ~ gender, scales = "free_x")
+  labs(x = "", y = "years old")
 ```
 ```{r}
 #| eval: true
@@ -516,7 +526,7 @@ patients_tble |>
   ggplot() +
   geom_histogram(aes(x = anchor_age), binwidth = 5)
 ```
-Notice that there are more female patients than male patients. The age of the patients has two peaks, one is around 60 years old, and the other is around 20 years old. According to the violin graph, the distribution of age is similar for male and female patients.
+Notice that there are more female patients than male patients. The age of the patients has two peaks, one is around 60 years old, and the other is around 20 years old. According to the violin graph, the distribution of age is quite similar for male and female patients. However, there are more female patients in the age group of 20-40 years old, and above 80 years old.
 
 ## Q5. Lab results
 
@@ -747,16 +757,28 @@ race_los <- mimic_icu_cohort |>
 
 race_los
 
+# Give different colors to different race group
+race_los$racegp <- "Others"
+race_los <- race_los |>
+  mutate(racegp = case_when(
+    grepl("ASIAN", race) ~ "Asian",
+    grepl("BLACK", race) ~ "Black",
+    grepl("HISPANIC", race) ~ "Hispanic",
+    grepl("WHITE", race) ~ "White",
+    TRUE ~ "Others"
+  ))
+
+nameorder <- race_los$race[order(race_los$racegp, race_los$mean_los)]
+race_los$race <- factor(race_los$race, levels = nameorder)
 race_los |>
-  ggplot(aes(x = mean_los, y = reorder(race, mean_los))) +
-  geom_point(size = 2) +
+  ggplot(aes(x = mean_los, y = race)) +
+  geom_segment(aes(yend = race), xend = 0, color = "grey50") +
+  geom_point(size = 2, aes(color = racegp)) +
   theme_bw() +
-  theme(panel.grid.major.x = element_blank(),
-        panel.grid.minor.x = element_blank(),
-        panel.grid.major.y = element_line(color = "grey80",
-                                          linetype = "dashed")) +
+  theme(panel.grid.major.y = element_blank()) +
   labs(x = "Mean length of ICU stay", y ="")
 ```
+
 ```{r}
 #| eval: true
 
