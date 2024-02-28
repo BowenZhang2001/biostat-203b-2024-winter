@@ -49,6 +49,26 @@ patients_adt <- tbl(con_bq, "transfers") |>
 
 patients_lab <- tbl(con_bq, "labevents")
 
+icu_stay <- tbl(con_bq, "icustays")
+
+icu_stay_id <- icu_stay |>
+  select(subject_id) |>
+  collect() |>
+  distinct()
+
+items <- tbl(con_bq, "d_items") |>
+  filter(abbreviation %in% c("HR", "NBPd", "NBPs", "RR", "Temperature F")) |>
+  select(itemid, label, abbreviation)
+
+vitals_tble <- tbl(con_bq, "chartevents") |>
+  filter(itemid %in% c(220045, 220180, 220179,
+                       223761, 220210)) |>
+  left_join(items, by = "itemid") |>
+  select(subject_id, stay_id, charttime, label, abbreviation, valuenum) |>
+  filter(!is.na(valuenum)) |>
+  mutate(charttime = as.POSIXct(charttime))
+
+
 generate_title <- function(info){
   subject_id <- str_c("Patient ", as.character(info[1, "subject_id"]))
   gender <- as.character(info[1, "gender"])
@@ -71,7 +91,7 @@ ui <- fluidPage(
   
   tabsetPanel(
     # Tab 1 -- Graphical and numerical summaries
-    tabPanel("Tab 1",
+    tabPanel("Summary",
              sidebarPanel(
                # First choose variable group demo/lab_measure/vitals
                selectInput("var_group", "Variable Group", var_gp),
@@ -85,7 +105,7 @@ ui <- fluidPage(
                )
              ),
     # Tab 2 -- Specific patient's ADT & ICU info
-    tabPanel("Tab 2",
+    tabPanel("Patient Info",
              sidebarPanel(
                numericInput("subject_id", "Subject ID", ""),
                actionButton("submit", "Submit"),
@@ -94,7 +114,6 @@ ui <- fluidPage(
              ),
              mainPanel(
                verbatimTextOutput("NotExist"),
-               plotOutput("adt_info"),
                plotOutput("icu_info")
              )
              )
@@ -170,7 +189,7 @@ server <- function(input, output) {
   })
   
   selected <- select_patient()$patient_id
-  if(selected %in% patients_info$subject_id){
+  if(selected %in% icu_stay_id$subject_id){
     output$NotExist <- NULL
     
     # Create a new tible for the selected patient
@@ -195,10 +214,6 @@ server <- function(input, output) {
     selected_subtitle <- str_c(selected_subtitle[1, "long_title"],
                                selected_subtitle[2, "long_title"],
                                selected_subtitle[3, "long_title"], sep = "\n")
-  
-    # output$NotExist <- renderText({
-    #   selected_subtitle
-    # })
     
     # Then we get the adt info
     selected_adt <- patients_adt |>
@@ -265,10 +280,42 @@ server <- function(input, output) {
            x = "Calendar Time", y = "") +
       scale_shape_manual(values = c(1:number_of_procedure))
     
+    # Grab the data for icu_plot (plot3)
+
+    selected_icu <- icu_stay |>
+      filter(subject_id == selected) |>
+      arrange(intime) |>
+      collect()
+    
+    selected_vital <- vitals_tble |>
+      filter(subject_id == selected) |>
+      collect() |>
+      group_by(stay_id)
+    
+    # Draw the plot3
+    plot3_title <- str_c("Patient", as.character(selected),
+                         "ICU stays - Vitals", sep = " ")
+    plot3 <- ggplot(data = selected_vital) +
+      geom_line(mapping = aes(x = charttime, y = valuenum,
+                              color = abbreviation), show.legend = FALSE) +
+      geom_point(mapping = aes(x = charttime, y = valuenum,
+                               color = abbreviation),
+                 size = 1, show.legend = FALSE) +
+      facet_grid(abbreviation ~ stay_id, scales = "free") +
+      theme_light() +
+      labs(title = plot3_title, x = "", y = "") +
+      scale_x_datetime(date_labels = "%b %d %H:%M") +
+      # This function make the x_axis more readable
+      guides(x = guide_axis(n.dodge = 2))
+    
+    
     # render the plot2
-    output$adt_info <- renderPlot({
-      plot2
+    output$icu_info <- renderPlot({
+      if(input$plot_selector == "ADT"){plot2}
+      else{plot3}
     })
+    
+
     
     
   }
