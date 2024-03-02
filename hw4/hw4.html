@@ -3072,7 +3072,7 @@ vertical-align: -.125em;
 <div class="cell">
 <div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="fu">sessionInfo</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
-<pre><code>R version 4.3.2 (2023-10-31)
+<pre><code>R version 4.3.3 (2024-02-29)
 Platform: x86_64-pc-linux-gnu (64-bit)
 Running under: Ubuntu 22.04.3 LTS
 
@@ -3093,8 +3093,8 @@ attached base packages:
 [1] stats     graphics  grDevices utils     datasets  methods   base     
 
 loaded via a namespace (and not attached):
- [1] htmlwidgets_1.6.4 compiler_4.3.2    fastmap_1.1.1     cli_3.6.2        
- [5] tools_4.3.2       htmltools_0.5.7   rstudioapi_0.15.0 yaml_2.3.8       
+ [1] htmlwidgets_1.6.4 compiler_4.3.3    fastmap_1.1.1     cli_3.6.2        
+ [5] tools_4.3.3       htmltools_0.5.7   rstudioapi_0.15.0 yaml_2.3.8       
  [9] rmarkdown_2.25    knitr_1.45        jsonlite_1.8.8    xfun_0.42        
 [13] digest_0.6.34     rlang_1.1.3       evaluate_0.23    </code></pre>
 </div>
@@ -3103,8 +3103,8 @@ loaded via a namespace (and not attached):
 <div class="cell">
 <div class="sourceCode cell-code" id="cb3"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a>memuse<span class="sc">::</span><span class="fu">Sys.meminfo</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
-<pre><code>Totalram:  7.711 GiB 
-Freeram:   6.506 GiB </code></pre>
+<pre><code>Totalram:  7.567 GiB 
+Freeram:   6.493 GiB </code></pre>
 </div>
 </div>
 <p>Load database libraries and the tidyverse frontend:</p>
@@ -3120,7 +3120,7 @@ Freeram:   6.506 GiB </code></pre>
 ✔ dplyr     1.1.4     ✔ readr     2.1.5
 ✔ forcats   1.0.0     ✔ stringr   1.5.1
 ✔ ggplot2   3.5.0     ✔ tibble    3.2.1
-✔ lubridate 1.9.3     ✔ tidyr     1.3.0
+✔ lubridate 1.9.3     ✔ tidyr     1.3.1
 ✔ purrr     1.0.2     
 ── Conflicts ────────────────────────────────────────── tidyverse_conflicts() ──
 ✖ dplyr::filter() masks stats::filter()
@@ -3328,55 +3328,53 @@ Freeram:   6.506 GiB </code></pre>
 <span id="cb18-7"><a href="#cb18-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">left_join</span>(</span>
 <span id="cb18-8"><a href="#cb18-8" aria-hidden="true" tabindex="-1"></a>    icustays_tble <span class="sc">|&gt;</span></span>
 <span id="cb18-9"><a href="#cb18-9" aria-hidden="true" tabindex="-1"></a>      <span class="fu">select</span>(subject_id, stay_id, intime),</span>
-<span id="cb18-10"><a href="#cb18-10" aria-hidden="true" tabindex="-1"></a>    <span class="at">by =</span> <span class="st">&quot;subject_id&quot;</span></span>
-<span id="cb18-11"><a href="#cb18-11" aria-hidden="true" tabindex="-1"></a>    ) <span class="sc">|&gt;</span></span>
-<span id="cb18-12"><a href="#cb18-12" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(storetime <span class="sc">&lt;</span> intime) <span class="sc">|&gt;</span></span>
-<span id="cb18-13"><a href="#cb18-13" aria-hidden="true" tabindex="-1"></a>  <span class="fu">group_by</span>(stay_id, itemid) <span class="sc">|&gt;</span></span>
-<span id="cb18-14"><a href="#cb18-14" aria-hidden="true" tabindex="-1"></a>  <span class="fu">slice_max</span>(<span class="at">order_by =</span> storetime, <span class="at">with_ties =</span> <span class="cn">FALSE</span>) <span class="sc">|&gt;</span></span>
-<span id="cb18-15"><a href="#cb18-15" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ungroup</span>() <span class="sc">|&gt;</span></span>
-<span id="cb18-16"><a href="#cb18-16" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(<span class="sc">-</span><span class="fu">c</span>(storetime, intime)) <span class="sc">|&gt;</span></span>
-<span id="cb18-17"><a href="#cb18-17" aria-hidden="true" tabindex="-1"></a>  <span class="co"># compute() |&gt;</span></span>
-<span id="cb18-18"><a href="#cb18-18" aria-hidden="true" tabindex="-1"></a>  <span class="fu">pivot_wider</span>(<span class="at">names_from =</span> itemid, <span class="at">values_from =</span> valuenum) <span class="sc">|&gt;</span></span>
-<span id="cb18-19"><a href="#cb18-19" aria-hidden="true" tabindex="-1"></a>  <span class="fu">arrange</span>(subject_id) <span class="sc">|&gt;</span></span>
-<span id="cb18-20"><a href="#cb18-20" aria-hidden="true" tabindex="-1"></a>  <span class="fu">rename</span>(</span>
-<span id="cb18-21"><a href="#cb18-21" aria-hidden="true" tabindex="-1"></a>    <span class="at">Creatinine =</span> <span class="st">`</span><span class="at">50912</span><span class="st">`</span>,</span>
-<span id="cb18-22"><a href="#cb18-22" aria-hidden="true" tabindex="-1"></a>    <span class="at">Potassium =</span> <span class="st">`</span><span class="at">50971</span><span class="st">`</span>,</span>
-<span id="cb18-23"><a href="#cb18-23" aria-hidden="true" tabindex="-1"></a>    <span class="at">Sodium =</span> <span class="st">`</span><span class="at">50983</span><span class="st">`</span>,</span>
-<span id="cb18-24"><a href="#cb18-24" aria-hidden="true" tabindex="-1"></a>    <span class="at">Chloride =</span> <span class="st">`</span><span class="at">50902</span><span class="st">`</span>,</span>
-<span id="cb18-25"><a href="#cb18-25" aria-hidden="true" tabindex="-1"></a>    <span class="at">Bicarbonate =</span> <span class="st">`</span><span class="at">50882</span><span class="st">`</span>,</span>
-<span id="cb18-26"><a href="#cb18-26" aria-hidden="true" tabindex="-1"></a>    <span class="at">Hematocrit =</span> <span class="st">`</span><span class="at">51221</span><span class="st">`</span>,</span>
-<span id="cb18-27"><a href="#cb18-27" aria-hidden="true" tabindex="-1"></a>    <span class="at">WBC =</span> <span class="st">`</span><span class="at">51301</span><span class="st">`</span>,</span>
-<span id="cb18-28"><a href="#cb18-28" aria-hidden="true" tabindex="-1"></a>    <span class="at">Glucose =</span> <span class="st">`</span><span class="at">50931</span><span class="st">`</span>)</span>
-<span id="cb18-29"><a href="#cb18-29" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb18-30"><a href="#cb18-30" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(labevents_tble, <span class="at">width =</span> <span class="cn">Inf</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb18-10"><a href="#cb18-10" aria-hidden="true" tabindex="-1"></a>    <span class="at">by =</span> <span class="st">&quot;subject_id&quot;</span>) <span class="sc">|&gt;</span></span>
+<span id="cb18-11"><a href="#cb18-11" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(storetime <span class="sc">&lt;</span> intime) <span class="sc">|&gt;</span></span>
+<span id="cb18-12"><a href="#cb18-12" aria-hidden="true" tabindex="-1"></a>  <span class="fu">group_by</span>(stay_id, itemid) <span class="sc">|&gt;</span></span>
+<span id="cb18-13"><a href="#cb18-13" aria-hidden="true" tabindex="-1"></a>  <span class="fu">slice_max</span>(<span class="at">order_by =</span> storetime, <span class="at">with_ties =</span> <span class="cn">FALSE</span>) <span class="sc">|&gt;</span></span>
+<span id="cb18-14"><a href="#cb18-14" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ungroup</span>() <span class="sc">|&gt;</span></span>
+<span id="cb18-15"><a href="#cb18-15" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(<span class="sc">-</span><span class="fu">c</span>(storetime, intime)) <span class="sc">|&gt;</span></span>
+<span id="cb18-16"><a href="#cb18-16" aria-hidden="true" tabindex="-1"></a>  <span class="fu">pivot_wider</span>(<span class="at">names_from =</span> itemid, <span class="at">values_from =</span> valuenum) <span class="sc">|&gt;</span></span>
+<span id="cb18-17"><a href="#cb18-17" aria-hidden="true" tabindex="-1"></a>  <span class="fu">arrange</span>(subject_id) <span class="sc">|&gt;</span></span>
+<span id="cb18-18"><a href="#cb18-18" aria-hidden="true" tabindex="-1"></a>  <span class="fu">rename</span>(</span>
+<span id="cb18-19"><a href="#cb18-19" aria-hidden="true" tabindex="-1"></a>    <span class="at">Creatinine =</span> <span class="st">`</span><span class="at">50912</span><span class="st">`</span>,</span>
+<span id="cb18-20"><a href="#cb18-20" aria-hidden="true" tabindex="-1"></a>    <span class="at">Potassium =</span> <span class="st">`</span><span class="at">50971</span><span class="st">`</span>,</span>
+<span id="cb18-21"><a href="#cb18-21" aria-hidden="true" tabindex="-1"></a>    <span class="at">Sodium =</span> <span class="st">`</span><span class="at">50983</span><span class="st">`</span>,</span>
+<span id="cb18-22"><a href="#cb18-22" aria-hidden="true" tabindex="-1"></a>    <span class="at">Chloride =</span> <span class="st">`</span><span class="at">50902</span><span class="st">`</span>,</span>
+<span id="cb18-23"><a href="#cb18-23" aria-hidden="true" tabindex="-1"></a>    <span class="at">Bicarbonate =</span> <span class="st">`</span><span class="at">50882</span><span class="st">`</span>,</span>
+<span id="cb18-24"><a href="#cb18-24" aria-hidden="true" tabindex="-1"></a>    <span class="at">Hematocrit =</span> <span class="st">`</span><span class="at">51221</span><span class="st">`</span>,</span>
+<span id="cb18-25"><a href="#cb18-25" aria-hidden="true" tabindex="-1"></a>    <span class="at">WBC =</span> <span class="st">`</span><span class="at">51301</span><span class="st">`</span>,</span>
+<span id="cb18-26"><a href="#cb18-26" aria-hidden="true" tabindex="-1"></a>    <span class="at">Glucose =</span> <span class="st">`</span><span class="at">50931</span><span class="st">`</span>)</span>
+<span id="cb18-27"><a href="#cb18-27" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb18-28"><a href="#cb18-28" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(labevents_tble, <span class="at">width =</span> <span class="cn">Inf</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code># Source:     SQL [?? x 10]
 # Database:   BigQueryConnection
 # Ordered by: subject_id
-   subject_id  stay_id Sodium Creatinine   WBC Potassium Glucose Bicarbonate
-        &lt;int&gt;    &lt;int&gt;  &lt;dbl&gt;      &lt;dbl&gt; &lt;dbl&gt;     &lt;dbl&gt;   &lt;dbl&gt;       &lt;dbl&gt;
- 1   10000032 39553978    126        0.7   6.9       6.7     102          25
- 2   10000980 39765666    144        2.3   5.3       3.9      89          21
- 3   10001217 34592300    142        0.5   5.4       4.1      87          30
- 4   10001217 37067082    142        0.6  15.7       4.2     112          22
- 5   10001725 31205490    139       NA    NA         4.1      NA          NA
- 6   10001884 37510196    130        1.1  12.2       4.5     141          30
- 7   10002013 39060235    137        0.9   7.2       3.5     288          24
- 8   10002155 33685454    139        1.1   7.9       4.6     138          24
- 9   10002155 32358465    120        1.4   9.8       5.7     133          26
-10   10002155 31090461    135        2.8  17.9       4.9     117          23
-   Hematocrit Chloride
-        &lt;dbl&gt;    &lt;dbl&gt;
- 1       41.1       95
- 2       27.3      109
- 3       37.4      104
- 4       38.1      108
- 5       NA         98
- 6       39.7       88
- 7       34.9      102
- 8       39.7      105
- 9       22.4       85
-10       25.5       98
+   subject_id  stay_id Glucose Chloride Bicarbonate Creatinine Sodium Hematocrit
+        &lt;int&gt;    &lt;int&gt;   &lt;dbl&gt;    &lt;dbl&gt;       &lt;dbl&gt;      &lt;dbl&gt;  &lt;dbl&gt;      &lt;dbl&gt;
+ 1   10000032 39553978     102       95          25        0.7    126       41.1
+ 2   10000980 39765666      89      109          21        2.3    144       27.3
+ 3   10001217 34592300      87      104          30        0.5    142       37.4
+ 4   10001217 37067082     112      108          22        0.6    142       38.1
+ 5   10001725 31205490      NA       98          NA       NA      139       NA  
+ 6   10001884 37510196     141       88          30        1.1    130       39.7
+ 7   10002013 39060235     288      102          24        0.9    137       34.9
+ 8   10002155 32358465     133       85          26        1.4    120       22.4
+ 9   10002155 33685454     138      105          24        1.1    139       39.7
+10   10002155 31090461     117       98          23        2.8    135       25.5
+   Potassium   WBC
+       &lt;dbl&gt; &lt;dbl&gt;
+ 1       6.7   6.9
+ 2       3.9   5.3
+ 3       4.1   5.4
+ 4       4.2  15.7
+ 5       4.1  NA  
+ 6       4.5  12.2
+ 7       3.5   7.2
+ 8       5.7   9.8
+ 9       4.6   7.9
+10       4.9  17.9
 # ℹ more rows</code></pre>
 </div>
 </div>
@@ -3392,39 +3390,38 @@ Freeram:   6.506 GiB </code></pre>
 <span id="cb20-5"><a href="#cb20-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">left_join</span>(</span>
 <span id="cb20-6"><a href="#cb20-6" aria-hidden="true" tabindex="-1"></a>    icustays_tble <span class="sc">|&gt;</span></span>
 <span id="cb20-7"><a href="#cb20-7" aria-hidden="true" tabindex="-1"></a>      <span class="fu">select</span>(subject_id, stay_id, intime, outtime),</span>
-<span id="cb20-8"><a href="#cb20-8" aria-hidden="true" tabindex="-1"></a>    <span class="at">by =</span> <span class="st">&quot;subject_id&quot;</span></span>
-<span id="cb20-9"><a href="#cb20-9" aria-hidden="true" tabindex="-1"></a>    ) <span class="sc">|&gt;</span></span>
-<span id="cb20-10"><a href="#cb20-10" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(charttime <span class="sc">&gt;=</span> intime <span class="sc">&amp;</span> charttime <span class="sc">&lt;=</span> outtime) <span class="sc">|&gt;</span></span>
-<span id="cb20-11"><a href="#cb20-11" aria-hidden="true" tabindex="-1"></a>  <span class="fu">group_by</span>(stay_id, itemid) <span class="sc">|&gt;</span></span>
-<span id="cb20-12"><a href="#cb20-12" aria-hidden="true" tabindex="-1"></a>  <span class="fu">slice_min</span>(<span class="at">order_by =</span> charttime, <span class="at">with_ties =</span> <span class="cn">FALSE</span>) <span class="sc">|&gt;</span></span>
-<span id="cb20-13"><a href="#cb20-13" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ungroup</span>() <span class="sc">|&gt;</span></span>
-<span id="cb20-14"><a href="#cb20-14" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(<span class="sc">-</span><span class="fu">c</span>(charttime, intime, outtime)) <span class="sc">|&gt;</span></span>
-<span id="cb20-15"><a href="#cb20-15" aria-hidden="true" tabindex="-1"></a>  <span class="fu">pivot_wider</span>(<span class="at">names_from =</span> itemid, <span class="at">values_from =</span> valuenum) <span class="sc">|&gt;</span></span>
-<span id="cb20-16"><a href="#cb20-16" aria-hidden="true" tabindex="-1"></a>  <span class="fu">arrange</span>(subject_id) <span class="sc">|&gt;</span></span>
-<span id="cb20-17"><a href="#cb20-17" aria-hidden="true" tabindex="-1"></a>  <span class="fu">rename</span>(</span>
-<span id="cb20-18"><a href="#cb20-18" aria-hidden="true" tabindex="-1"></a>    <span class="at">HR =</span> <span class="st">`</span><span class="at">220045</span><span class="st">`</span>,</span>
-<span id="cb20-19"><a href="#cb20-19" aria-hidden="true" tabindex="-1"></a>    <span class="at">NBPs =</span> <span class="st">`</span><span class="at">220179</span><span class="st">`</span>,</span>
-<span id="cb20-20"><a href="#cb20-20" aria-hidden="true" tabindex="-1"></a>    <span class="at">NBPd =</span> <span class="st">`</span><span class="at">220180</span><span class="st">`</span>,</span>
-<span id="cb20-21"><a href="#cb20-21" aria-hidden="true" tabindex="-1"></a>    <span class="at">RR =</span> <span class="st">`</span><span class="at">223761</span><span class="st">`</span>,</span>
-<span id="cb20-22"><a href="#cb20-22" aria-hidden="true" tabindex="-1"></a>    <span class="at">TempF =</span> <span class="st">`</span><span class="at">220210</span><span class="st">`</span>)</span>
-<span id="cb20-23"><a href="#cb20-23" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb20-24"><a href="#cb20-24" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(chartevents_tble, <span class="at">width =</span> <span class="cn">Inf</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb20-8"><a href="#cb20-8" aria-hidden="true" tabindex="-1"></a>    <span class="at">by =</span> <span class="st">&quot;subject_id&quot;</span>) <span class="sc">|&gt;</span></span>
+<span id="cb20-9"><a href="#cb20-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(charttime <span class="sc">&gt;=</span> intime <span class="sc">&amp;</span> charttime <span class="sc">&lt;=</span> outtime) <span class="sc">|&gt;</span></span>
+<span id="cb20-10"><a href="#cb20-10" aria-hidden="true" tabindex="-1"></a>  <span class="fu">group_by</span>(stay_id, itemid) <span class="sc">|&gt;</span></span>
+<span id="cb20-11"><a href="#cb20-11" aria-hidden="true" tabindex="-1"></a>  <span class="fu">slice_min</span>(<span class="at">order_by =</span> charttime, <span class="at">with_ties =</span> <span class="cn">FALSE</span>) <span class="sc">|&gt;</span></span>
+<span id="cb20-12"><a href="#cb20-12" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ungroup</span>() <span class="sc">|&gt;</span></span>
+<span id="cb20-13"><a href="#cb20-13" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(<span class="sc">-</span><span class="fu">c</span>(charttime, intime, outtime)) <span class="sc">|&gt;</span></span>
+<span id="cb20-14"><a href="#cb20-14" aria-hidden="true" tabindex="-1"></a>  <span class="fu">pivot_wider</span>(<span class="at">names_from =</span> itemid, <span class="at">values_from =</span> valuenum) <span class="sc">|&gt;</span></span>
+<span id="cb20-15"><a href="#cb20-15" aria-hidden="true" tabindex="-1"></a>  <span class="fu">arrange</span>(subject_id) <span class="sc">|&gt;</span></span>
+<span id="cb20-16"><a href="#cb20-16" aria-hidden="true" tabindex="-1"></a>  <span class="fu">rename</span>(</span>
+<span id="cb20-17"><a href="#cb20-17" aria-hidden="true" tabindex="-1"></a>    <span class="at">HR =</span> <span class="st">`</span><span class="at">220045</span><span class="st">`</span>,</span>
+<span id="cb20-18"><a href="#cb20-18" aria-hidden="true" tabindex="-1"></a>    <span class="at">NBPs =</span> <span class="st">`</span><span class="at">220179</span><span class="st">`</span>,</span>
+<span id="cb20-19"><a href="#cb20-19" aria-hidden="true" tabindex="-1"></a>    <span class="at">NBPd =</span> <span class="st">`</span><span class="at">220180</span><span class="st">`</span>,</span>
+<span id="cb20-20"><a href="#cb20-20" aria-hidden="true" tabindex="-1"></a>    <span class="at">RR =</span> <span class="st">`</span><span class="at">223761</span><span class="st">`</span>,</span>
+<span id="cb20-21"><a href="#cb20-21" aria-hidden="true" tabindex="-1"></a>    <span class="at">TempF =</span> <span class="st">`</span><span class="at">220210</span><span class="st">`</span>)</span>
+<span id="cb20-22"><a href="#cb20-22" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb20-23"><a href="#cb20-23" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(chartevents_tble, <span class="at">width =</span> <span class="cn">Inf</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code># Source:     SQL [?? x 7]
 # Database:   BigQueryConnection
 # Ordered by: subject_id
-   subject_id  stay_id    HR    RR  NBPd TempF  NBPs
+   subject_id  stay_id  NBPd    HR    RR TempF  NBPs
         &lt;int&gt;    &lt;int&gt; &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt;
- 1   10000032 39553978    91  98.7    48    24    84
- 2   10000980 39765666    77  98      77    23   150
- 3   10001217 37067082    86  98.5    90    18   151
- 4   10001217 34592300    96  97.6    95    11   167
- 5   10001725 31205490    55  97.7    56    19    73
- 6   10001884 37510196    38  98.1    12    10   180
- 7   10002013 39060235    80  97.2    70    14   104
- 8   10002155 32358465    98  97.7    65    23   109
- 9   10002155 31090461    94  96.9    51    18   118
-10   10002155 33685454    68  95.9    61    18   126
+ 1   10000032 39553978    48    91  98.7    24    84
+ 2   10000980 39765666    77    77  98      23   150
+ 3   10001217 34592300    95    96  97.6    11   167
+ 4   10001217 37067082    90    86  98.5    18   151
+ 5   10001725 31205490    56    55  97.7    19    73
+ 6   10001884 37510196    12    38  98.1    10   180
+ 7   10002013 39060235    70    80  97.2    14   104
+ 8   10002155 32358465    65    98  97.7    23   109
+ 9   10002155 31090461    51    94  96.9    18   118
+10   10002155 33685454    61    68  95.9    18   126
 # ℹ more rows</code></pre>
 </div>
 </div>
@@ -3536,30 +3533,30 @@ ORDER BY is ignored in subqueries without LIMIT
  8                    0 F              80        2128 2008 - 2010      
  9                    1 F              80        2128 2008 - 2010      
 10                    0 F              80        2128 2008 - 2010      
-   dod        age_intime Sodium Creatinine   WBC Potassium Glucose Bicarbonate
-   &lt;date&gt;          &lt;dbl&gt;  &lt;dbl&gt;      &lt;dbl&gt; &lt;dbl&gt;     &lt;dbl&gt;   &lt;dbl&gt;       &lt;dbl&gt;
- 1 2180-09-09         52    126        0.7   6.9       6.7     102          25
- 2 2193-08-26         76    144        2.3   5.3       3.9      89          21
- 3 NA                 55    142        0.6  15.7       4.2     112          22
- 4 NA                 55    142        0.5   5.4       4.1      87          30
- 5 NA                 46    139       NA    NA         4.1      NA          NA
- 6 2131-01-20         77    130        1.1  12.2       4.5     141          30
- 7 NA                 57    137        0.9   7.2       3.5     288          24
- 8 2131-03-10         81    139        1.1   7.9       4.6     138          24
- 9 2131-03-10         83    120        1.4   9.8       5.7     133          26
-10 2131-03-10         82    135        2.8  17.9       4.9     117          23
-   Hematocrit Chloride    HR    RR  NBPd TempF  NBPs
-        &lt;dbl&gt;    &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt;
- 1       41.1       95    91  98.7    48    24    84
- 2       27.3      109    77  98      77    23   150
- 3       38.1      108    86  98.5    90    18   151
- 4       37.4      104    96  97.6    95    11   167
- 5       NA         98    55  97.7    56    19    73
- 6       39.7       88    38  98.1    12    10   180
- 7       34.9      102    80  97.2    70    14   104
- 8       39.7      105    68  95.9    61    18   126
- 9       22.4       85    98  97.7    65    23   109
-10       25.5       98    94  96.9    51    18   118
+   dod        age_intime Glucose Chloride Bicarbonate Creatinine Sodium
+   &lt;date&gt;          &lt;dbl&gt;   &lt;dbl&gt;    &lt;dbl&gt;       &lt;dbl&gt;      &lt;dbl&gt;  &lt;dbl&gt;
+ 1 2180-09-09         52     102       95          25        0.7    126
+ 2 2193-08-26         76      89      109          21        2.3    144
+ 3 NA                 55     112      108          22        0.6    142
+ 4 NA                 55      87      104          30        0.5    142
+ 5 NA                 46      NA       98          NA       NA      139
+ 6 2131-01-20         77     141       88          30        1.1    130
+ 7 NA                 57     288      102          24        0.9    137
+ 8 2131-03-10         81     138      105          24        1.1    139
+ 9 2131-03-10         83     133       85          26        1.4    120
+10 2131-03-10         82     117       98          23        2.8    135
+   Hematocrit Potassium   WBC  NBPd    HR    RR TempF  NBPs
+        &lt;dbl&gt;     &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt;
+ 1       41.1       6.7   6.9    48    91  98.7    24    84
+ 2       27.3       3.9   5.3    77    77  98      23   150
+ 3       38.1       4.2  15.7    90    86  98.5    18   151
+ 4       37.4       4.1   5.4    95    96  97.6    11   167
+ 5       NA         4.1  NA      56    55  97.7    19    73
+ 6       39.7       4.5  12.2    12    38  98.1    10   180
+ 7       34.9       3.5   7.2    70    80  97.2    14   104
+ 8       39.7       4.6   7.9    61    68  95.9    18   126
+ 9       22.4       5.7   9.8    65    98  97.7    23   109
+10       25.5       4.9  17.9    51    94  96.9    18   118
 # ℹ 73,171 more rows</code></pre>
 </div>
 </div>
@@ -3595,20 +3592,20 @@ ORDER BY is ignored in subqueries without LIMIT
 <span id="cb26-22"><a href="#cb26-22" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tbl_summary</span>(<span class="at">by =</span> los_long)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output-display">
 
-<div id="ycoenuawjg" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
-<style>#ycoenuawjg table {
+<div id="brzfksfelc" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
+<style>#brzfksfelc table {
 font-family: system-ui, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
 -webkit-font-smoothing: antialiased;
 -moz-osx-font-smoothing: grayscale;
 }
-#ycoenuawjg thead, #ycoenuawjg tbody, #ycoenuawjg tfoot, #ycoenuawjg tr, #ycoenuawjg td, #ycoenuawjg th {
+#brzfksfelc thead, #brzfksfelc tbody, #brzfksfelc tfoot, #brzfksfelc tr, #brzfksfelc td, #brzfksfelc th {
 border-style: none;
 }
-#ycoenuawjg p {
+#brzfksfelc p {
 margin: 0;
 padding: 0;
 }
-#ycoenuawjg .gt_table {
+#brzfksfelc .gt_table {
 display: table;
 border-collapse: collapse;
 line-height: normal;
@@ -3633,11 +3630,11 @@ border-left-style: none;
 border-left-width: 2px;
 border-left-color: #D3D3D3;
 }
-#ycoenuawjg .gt_caption {
+#brzfksfelc .gt_caption {
 padding-top: 4px;
 padding-bottom: 4px;
 }
-#ycoenuawjg .gt_title {
+#brzfksfelc .gt_title {
 color: #333333;
 font-size: 125%;
 font-weight: initial;
@@ -3648,7 +3645,7 @@ padding-right: 5px;
 border-bottom-color: #FFFFFF;
 border-bottom-width: 0;
 }
-#ycoenuawjg .gt_subtitle {
+#brzfksfelc .gt_subtitle {
 color: #333333;
 font-size: 85%;
 font-weight: initial;
@@ -3659,7 +3656,7 @@ padding-right: 5px;
 border-top-color: #FFFFFF;
 border-top-width: 0;
 }
-#ycoenuawjg .gt_heading {
+#brzfksfelc .gt_heading {
 background-color: #FFFFFF;
 text-align: center;
 border-bottom-color: #FFFFFF;
@@ -3670,12 +3667,12 @@ border-right-style: none;
 border-right-width: 1px;
 border-right-color: #D3D3D3;
 }
-#ycoenuawjg .gt_bottom_border {
+#brzfksfelc .gt_bottom_border {
 border-bottom-style: solid;
 border-bottom-width: 2px;
 border-bottom-color: #D3D3D3;
 }
-#ycoenuawjg .gt_col_headings {
+#brzfksfelc .gt_col_headings {
 border-top-style: solid;
 border-top-width: 2px;
 border-top-color: #D3D3D3;
@@ -3689,7 +3686,7 @@ border-right-style: none;
 border-right-width: 1px;
 border-right-color: #D3D3D3;
 }
-#ycoenuawjg .gt_col_heading {
+#brzfksfelc .gt_col_heading {
 color: #333333;
 background-color: #FFFFFF;
 font-size: 100%;
@@ -3708,7 +3705,7 @@ padding-left: 5px;
 padding-right: 5px;
 overflow-x: hidden;
 }
-#ycoenuawjg .gt_column_spanner_outer {
+#brzfksfelc .gt_column_spanner_outer {
 color: #333333;
 background-color: #FFFFFF;
 font-size: 100%;
@@ -3719,13 +3716,13 @@ padding-bottom: 0;
 padding-left: 4px;
 padding-right: 4px;
 }
-#ycoenuawjg .gt_column_spanner_outer:first-child {
+#brzfksfelc .gt_column_spanner_outer:first-child {
 padding-left: 0;
 }
-#ycoenuawjg .gt_column_spanner_outer:last-child {
+#brzfksfelc .gt_column_spanner_outer:last-child {
 padding-right: 0;
 }
-#ycoenuawjg .gt_column_spanner {
+#brzfksfelc .gt_column_spanner {
 border-bottom-style: solid;
 border-bottom-width: 2px;
 border-bottom-color: #D3D3D3;
@@ -3736,10 +3733,10 @@ overflow-x: hidden;
 display: inline-block;
 width: 100%;
 }
-#ycoenuawjg .gt_spanner_row {
+#brzfksfelc .gt_spanner_row {
 border-bottom-style: hidden;
 }
-#ycoenuawjg .gt_group_heading {
+#brzfksfelc .gt_group_heading {
 padding-top: 8px;
 padding-bottom: 8px;
 padding-left: 5px;
@@ -3764,7 +3761,7 @@ border-right-color: #D3D3D3;
 vertical-align: middle;
 text-align: left;
 }
-#ycoenuawjg .gt_empty_group_heading {
+#brzfksfelc .gt_empty_group_heading {
 padding: 0.5px;
 color: #333333;
 background-color: #FFFFFF;
@@ -3778,13 +3775,13 @@ border-bottom-width: 2px;
 border-bottom-color: #D3D3D3;
 vertical-align: middle;
 }
-#ycoenuawjg .gt_from_md > :first-child {
+#brzfksfelc .gt_from_md > :first-child {
 margin-top: 0;
 }
-#ycoenuawjg .gt_from_md > :last-child {
+#brzfksfelc .gt_from_md > :last-child {
 margin-bottom: 0;
 }
-#ycoenuawjg .gt_row {
+#brzfksfelc .gt_row {
 padding-top: 8px;
 padding-bottom: 8px;
 padding-left: 5px;
@@ -3802,7 +3799,7 @@ border-right-color: #D3D3D3;
 vertical-align: middle;
 overflow-x: hidden;
 }
-#ycoenuawjg .gt_stub {
+#brzfksfelc .gt_stub {
 color: #333333;
 background-color: #FFFFFF;
 font-size: 100%;
@@ -3814,7 +3811,7 @@ border-right-color: #D3D3D3;
 padding-left: 5px;
 padding-right: 5px;
 }
-#ycoenuawjg .gt_stub_row_group {
+#brzfksfelc .gt_stub_row_group {
 color: #333333;
 background-color: #FFFFFF;
 font-size: 100%;
@@ -3827,13 +3824,13 @@ padding-left: 5px;
 padding-right: 5px;
 vertical-align: top;
 }
-#ycoenuawjg .gt_row_group_first td {
+#brzfksfelc .gt_row_group_first td {
 border-top-width: 2px;
 }
-#ycoenuawjg .gt_row_group_first th {
+#brzfksfelc .gt_row_group_first th {
 border-top-width: 2px;
 }
-#ycoenuawjg .gt_summary_row {
+#brzfksfelc .gt_summary_row {
 color: #333333;
 background-color: #FFFFFF;
 text-transform: inherit;
@@ -3842,14 +3839,14 @@ padding-bottom: 8px;
 padding-left: 5px;
 padding-right: 5px;
 }
-#ycoenuawjg .gt_first_summary_row {
+#brzfksfelc .gt_first_summary_row {
 border-top-style: solid;
 border-top-color: #D3D3D3;
 }
-#ycoenuawjg .gt_first_summary_row.thick {
+#brzfksfelc .gt_first_summary_row.thick {
 border-top-width: 2px;
 }
-#ycoenuawjg .gt_last_summary_row {
+#brzfksfelc .gt_last_summary_row {
 padding-top: 8px;
 padding-bottom: 8px;
 padding-left: 5px;
@@ -3858,7 +3855,7 @@ border-bottom-style: solid;
 border-bottom-width: 2px;
 border-bottom-color: #D3D3D3;
 }
-#ycoenuawjg .gt_grand_summary_row {
+#brzfksfelc .gt_grand_summary_row {
 color: #333333;
 background-color: #FFFFFF;
 text-transform: inherit;
@@ -3867,7 +3864,7 @@ padding-bottom: 8px;
 padding-left: 5px;
 padding-right: 5px;
 }
-#ycoenuawjg .gt_first_grand_summary_row {
+#brzfksfelc .gt_first_grand_summary_row {
 padding-top: 8px;
 padding-bottom: 8px;
 padding-left: 5px;
@@ -3876,7 +3873,7 @@ border-top-style: double;
 border-top-width: 6px;
 border-top-color: #D3D3D3;
 }
-#ycoenuawjg .gt_last_grand_summary_row_top {
+#brzfksfelc .gt_last_grand_summary_row_top {
 padding-top: 8px;
 padding-bottom: 8px;
 padding-left: 5px;
@@ -3885,10 +3882,10 @@ border-bottom-style: double;
 border-bottom-width: 6px;
 border-bottom-color: #D3D3D3;
 }
-#ycoenuawjg .gt_striped {
+#brzfksfelc .gt_striped {
 background-color: rgba(128, 128, 128, 0.05);
 }
-#ycoenuawjg .gt_table_body {
+#brzfksfelc .gt_table_body {
 border-top-style: solid;
 border-top-width: 2px;
 border-top-color: #D3D3D3;
@@ -3896,7 +3893,7 @@ border-bottom-style: solid;
 border-bottom-width: 2px;
 border-bottom-color: #D3D3D3;
 }
-#ycoenuawjg .gt_footnotes {
+#brzfksfelc .gt_footnotes {
 color: #333333;
 background-color: #FFFFFF;
 border-bottom-style: none;
@@ -3909,7 +3906,7 @@ border-right-style: none;
 border-right-width: 2px;
 border-right-color: #D3D3D3;
 }
-#ycoenuawjg .gt_footnote {
+#brzfksfelc .gt_footnote {
 margin: 0px;
 font-size: 90%;
 padding-top: 4px;
@@ -3917,7 +3914,7 @@ padding-bottom: 4px;
 padding-left: 5px;
 padding-right: 5px;
 }
-#ycoenuawjg .gt_sourcenotes {
+#brzfksfelc .gt_sourcenotes {
 color: #333333;
 background-color: #FFFFFF;
 border-bottom-style: none;
@@ -3930,57 +3927,57 @@ border-right-style: none;
 border-right-width: 2px;
 border-right-color: #D3D3D3;
 }
-#ycoenuawjg .gt_sourcenote {
+#brzfksfelc .gt_sourcenote {
 font-size: 90%;
 padding-top: 4px;
 padding-bottom: 4px;
 padding-left: 5px;
 padding-right: 5px;
 }
-#ycoenuawjg .gt_left {
+#brzfksfelc .gt_left {
 text-align: left;
 }
-#ycoenuawjg .gt_center {
+#brzfksfelc .gt_center {
 text-align: center;
 }
-#ycoenuawjg .gt_right {
+#brzfksfelc .gt_right {
 text-align: right;
 font-variant-numeric: tabular-nums;
 }
-#ycoenuawjg .gt_font_normal {
+#brzfksfelc .gt_font_normal {
 font-weight: normal;
 }
-#ycoenuawjg .gt_font_bold {
+#brzfksfelc .gt_font_bold {
 font-weight: bold;
 }
-#ycoenuawjg .gt_font_italic {
+#brzfksfelc .gt_font_italic {
 font-style: italic;
 }
-#ycoenuawjg .gt_super {
+#brzfksfelc .gt_super {
 font-size: 65%;
 }
-#ycoenuawjg .gt_footnote_marks {
+#brzfksfelc .gt_footnote_marks {
 font-size: 75%;
 vertical-align: 0.4em;
 position: initial;
 }
-#ycoenuawjg .gt_asterisk {
+#brzfksfelc .gt_asterisk {
 font-size: 100%;
 vertical-align: 0;
 }
-#ycoenuawjg .gt_indent_1 {
+#brzfksfelc .gt_indent_1 {
 text-indent: 5px;
 }
-#ycoenuawjg .gt_indent_2 {
+#brzfksfelc .gt_indent_2 {
 text-indent: 10px;
 }
-#ycoenuawjg .gt_indent_3 {
+#brzfksfelc .gt_indent_3 {
 text-indent: 15px;
 }
-#ycoenuawjg .gt_indent_4 {
+#brzfksfelc .gt_indent_4 {
 text-indent: 20px;
 }
-#ycoenuawjg .gt_indent_5 {
+#brzfksfelc .gt_indent_5 {
 text-indent: 25px;
 }
 </style>
@@ -4164,54 +4161,60 @@ text-indent: 25px;
     <tr><td headers="label" class="gt_row gt_left">age_intime</td>
 <td headers="stat_1" class="gt_row gt_center">65 (53, 77)</td>
 <td headers="stat_2" class="gt_row gt_center">67 (56, 78)</td></tr>
-    <tr><td headers="label" class="gt_row gt_left">Sodium</td>
-<td headers="stat_1" class="gt_row gt_center">139.0 (136.0, 141.0)</td>
-<td headers="stat_2" class="gt_row gt_center">138.0 (135.0, 141.0)</td></tr>
-    <tr><td headers="label" class="gt_row gt_left">    Unknown</td>
-<td headers="stat_1" class="gt_row gt_center">4,174</td>
-<td headers="stat_2" class="gt_row gt_center">4,698</td></tr>
-    <tr><td headers="label" class="gt_row gt_left">Creatinine</td>
-<td headers="stat_1" class="gt_row gt_center">1.00 (0.80, 1.40)</td>
-<td headers="stat_2" class="gt_row gt_center">1.00 (0.80, 1.60)</td></tr>
-    <tr><td headers="label" class="gt_row gt_left">    Unknown</td>
-<td headers="stat_1" class="gt_row gt_center">2,599</td>
-<td headers="stat_2" class="gt_row gt_center">3,171</td></tr>
-    <tr><td headers="label" class="gt_row gt_left">WBC</td>
-<td headers="stat_1" class="gt_row gt_center">9.0 (6.6, 12.6)</td>
-<td headers="stat_2" class="gt_row gt_center">9.7 (7.0, 13.8)</td></tr>
-    <tr><td headers="label" class="gt_row gt_left">    Unknown</td>
-<td headers="stat_1" class="gt_row gt_center">2,272</td>
-<td headers="stat_2" class="gt_row gt_center">2,822</td></tr>
-    <tr><td headers="label" class="gt_row gt_left">Potassium</td>
-<td headers="stat_1" class="gt_row gt_center">4.20 (3.80, 4.60)</td>
-<td headers="stat_2" class="gt_row gt_center">4.20 (3.80, 4.70)</td></tr>
-    <tr><td headers="label" class="gt_row gt_left">    Unknown</td>
-<td headers="stat_1" class="gt_row gt_center">4,189</td>
-<td headers="stat_2" class="gt_row gt_center">4,712</td></tr>
     <tr><td headers="label" class="gt_row gt_left">Glucose</td>
 <td headers="stat_1" class="gt_row gt_center">118 (98, 153)</td>
 <td headers="stat_2" class="gt_row gt_center">122 (100, 159)</td></tr>
     <tr><td headers="label" class="gt_row gt_left">    Unknown</td>
 <td headers="stat_1" class="gt_row gt_center">4,282</td>
 <td headers="stat_2" class="gt_row gt_center">4,817</td></tr>
-    <tr><td headers="label" class="gt_row gt_left">Bicarbonate</td>
-<td headers="stat_1" class="gt_row gt_center">25.0 (22.0, 27.0)</td>
-<td headers="stat_2" class="gt_row gt_center">24.0 (21.0, 27.0)</td></tr>
-    <tr><td headers="label" class="gt_row gt_left">    Unknown</td>
-<td headers="stat_1" class="gt_row gt_center">4,270</td>
-<td headers="stat_2" class="gt_row gt_center">4,780</td></tr>
-    <tr><td headers="label" class="gt_row gt_left">Hematocrit</td>
-<td headers="stat_1" class="gt_row gt_center">36 (30, 40)</td>
-<td headers="stat_2" class="gt_row gt_center">35 (29, 40)</td></tr>
-    <tr><td headers="label" class="gt_row gt_left">    Unknown</td>
-<td headers="stat_1" class="gt_row gt_center">2,236</td>
-<td headers="stat_2" class="gt_row gt_center">2,781</td></tr>
     <tr><td headers="label" class="gt_row gt_left">Chloride</td>
 <td headers="stat_1" class="gt_row gt_center">102 (98, 105)</td>
 <td headers="stat_2" class="gt_row gt_center">102 (98, 105)</td></tr>
     <tr><td headers="label" class="gt_row gt_left">    Unknown</td>
 <td headers="stat_1" class="gt_row gt_center">4,175</td>
 <td headers="stat_2" class="gt_row gt_center">4,708</td></tr>
+    <tr><td headers="label" class="gt_row gt_left">Bicarbonate</td>
+<td headers="stat_1" class="gt_row gt_center">25.0 (22.0, 27.0)</td>
+<td headers="stat_2" class="gt_row gt_center">24.0 (21.0, 27.0)</td></tr>
+    <tr><td headers="label" class="gt_row gt_left">    Unknown</td>
+<td headers="stat_1" class="gt_row gt_center">4,270</td>
+<td headers="stat_2" class="gt_row gt_center">4,780</td></tr>
+    <tr><td headers="label" class="gt_row gt_left">Creatinine</td>
+<td headers="stat_1" class="gt_row gt_center">1.00 (0.80, 1.40)</td>
+<td headers="stat_2" class="gt_row gt_center">1.00 (0.80, 1.60)</td></tr>
+    <tr><td headers="label" class="gt_row gt_left">    Unknown</td>
+<td headers="stat_1" class="gt_row gt_center">2,599</td>
+<td headers="stat_2" class="gt_row gt_center">3,171</td></tr>
+    <tr><td headers="label" class="gt_row gt_left">Sodium</td>
+<td headers="stat_1" class="gt_row gt_center">139.0 (136.0, 141.0)</td>
+<td headers="stat_2" class="gt_row gt_center">138.0 (135.0, 141.0)</td></tr>
+    <tr><td headers="label" class="gt_row gt_left">    Unknown</td>
+<td headers="stat_1" class="gt_row gt_center">4,174</td>
+<td headers="stat_2" class="gt_row gt_center">4,698</td></tr>
+    <tr><td headers="label" class="gt_row gt_left">Hematocrit</td>
+<td headers="stat_1" class="gt_row gt_center">36 (30, 40)</td>
+<td headers="stat_2" class="gt_row gt_center">35 (29, 40)</td></tr>
+    <tr><td headers="label" class="gt_row gt_left">    Unknown</td>
+<td headers="stat_1" class="gt_row gt_center">2,236</td>
+<td headers="stat_2" class="gt_row gt_center">2,781</td></tr>
+    <tr><td headers="label" class="gt_row gt_left">Potassium</td>
+<td headers="stat_1" class="gt_row gt_center">4.20 (3.80, 4.60)</td>
+<td headers="stat_2" class="gt_row gt_center">4.20 (3.80, 4.70)</td></tr>
+    <tr><td headers="label" class="gt_row gt_left">    Unknown</td>
+<td headers="stat_1" class="gt_row gt_center">4,189</td>
+<td headers="stat_2" class="gt_row gt_center">4,712</td></tr>
+    <tr><td headers="label" class="gt_row gt_left">WBC</td>
+<td headers="stat_1" class="gt_row gt_center">9.0 (6.6, 12.6)</td>
+<td headers="stat_2" class="gt_row gt_center">9.7 (7.0, 13.8)</td></tr>
+    <tr><td headers="label" class="gt_row gt_left">    Unknown</td>
+<td headers="stat_1" class="gt_row gt_center">2,272</td>
+<td headers="stat_2" class="gt_row gt_center">2,822</td></tr>
+    <tr><td headers="label" class="gt_row gt_left">NBPd</td>
+<td headers="stat_1" class="gt_row gt_center">68 (58, 80)</td>
+<td headers="stat_2" class="gt_row gt_center">66 (55, 79)</td></tr>
+    <tr><td headers="label" class="gt_row gt_left">    Unknown</td>
+<td headers="stat_1" class="gt_row gt_center">733</td>
+<td headers="stat_2" class="gt_row gt_center">250</td></tr>
     <tr><td headers="label" class="gt_row gt_left">HR</td>
 <td headers="stat_1" class="gt_row gt_center">85 (74, 99)</td>
 <td headers="stat_2" class="gt_row gt_center">88 (76, 103)</td></tr>
@@ -4224,12 +4227,6 @@ text-indent: 25px;
     <tr><td headers="label" class="gt_row gt_left">    Unknown</td>
 <td headers="stat_1" class="gt_row gt_center">1,189</td>
 <td headers="stat_2" class="gt_row gt_center">173</td></tr>
-    <tr><td headers="label" class="gt_row gt_left">NBPd</td>
-<td headers="stat_1" class="gt_row gt_center">68 (58, 80)</td>
-<td headers="stat_2" class="gt_row gt_center">66 (55, 79)</td></tr>
-    <tr><td headers="label" class="gt_row gt_left">    Unknown</td>
-<td headers="stat_1" class="gt_row gt_center">733</td>
-<td headers="stat_2" class="gt_row gt_center">250</td></tr>
     <tr><td headers="label" class="gt_row gt_left">TempF</td>
 <td headers="stat_1" class="gt_row gt_center">18.0 (15.0, 22.0)</td>
 <td headers="stat_2" class="gt_row gt_center">19.0 (15.0, 23.0)</td></tr>

@@ -61,8 +61,7 @@ items <- tbl(con_bq, "d_items") |>
   select(itemid, label, abbreviation)
 
 vitals_tble <- tbl(con_bq, "chartevents") |>
-  filter(itemid %in% c(220045, 220180, 220179,
-                       223761, 220210)) |>
+  filter(itemid %in% c(220045, 220180, 220179, 223761, 220210)) |>
   left_join(items, by = "itemid") |>
   select(subject_id, stay_id, charttime, label, abbreviation, valuenum) |>
   filter(!is.na(valuenum)) |>
@@ -134,7 +133,7 @@ server <- function(input, output) {
                       "lab_measure" = lab_measure,
                       "vitals" = vitals)
     selectInput("var_name", "Variable", choices = choices)
-  })
+    })
   
   output$slider <- renderUI({
     var_group <- input$var_group
@@ -267,7 +266,7 @@ server <- function(input, output) {
       theme_bw() +
       # legend.position = "bottom" is to put the legend at the bottom
       # legend.box = "vertical" is to arrange legend shape & color vertically
-      theme(legend.position="bottom", legend.box = "vertical",
+      theme(legend.position = "bottom", legend.box = "vertical",
             text = element_text(size = 8)) +
       # shape is on the top and color below, no linewidth legend
       guides(shape = guide_legend(ncol = 2, order = 1),
@@ -314,11 +313,8 @@ server <- function(input, output) {
       if(input$plot_selector == "ADT"){plot2}
       else{plot3}
     })
-    
-
-    
-    
   }
+  # If the subject_id does not match the patient in ICU cohort
   else{
     output$NotExist <- renderPrint({
       "This patient_id does not exist!"

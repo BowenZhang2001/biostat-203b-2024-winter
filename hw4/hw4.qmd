@@ -16,12 +16,15 @@ execute:
 ---
 
 Display machine information:
+
 ```{r}
 #| eval: true
 
 sessionInfo()
 ```
+
 Display my machine memory.
+
 ```{r}
 #| eval: true
 
@@ -29,6 +32,7 @@ memuse::Sys.meminfo()
 ```
 
 Load database libraries and the tidyverse frontend:
+
 ```{r setup}
 #| eval: true
 
@@ -40,13 +44,14 @@ library(gtsummary)
 library(tidyverse)
 ```
 
-## Q1. Compile the ICU cohort in HW3 from the Google BigQuery database 
+## Q1. Compile the ICU cohort in HW3 from the Google BigQuery database
 
 Below is an outline of steps. In this homework, we exclusively work with the BigQuery database and should not use any MIMIC data files stored on our local computer. Transform data as much as possible in BigQuery database and `collect()` the tibble only at the end of Q1.7.
 
 ### Q1.1 Connect to BigQuery
 
 Authenticate with BigQuery using the service account token. Please place the service account token (shared via BruinLearn) in the working directory (same folder as your qmd file). Do **not** add this token to your git repository.
+
 ```{r}
 #| eval: true
 
@@ -55,7 +60,9 @@ satoken <- "biostat-203b-2024-winter-313290ce47a6.json"
 # BigQuery authentication using service account
 bq_auth(path = satoken)
 ```
+
 Connect to BigQuery database `mimic4_v2_2` in GCP (Google Cloud Platform), using the project billing account `biostat-203b-2024-winter`.
+
 ```{r}
 #| eval: true
 
@@ -68,15 +75,19 @@ con_bq <- dbConnect(
 )
 con_bq
 ```
+
 List all tables in the `mimic4_v2_2` database.
+
 ```{r}
 #| eval: true
 
 dbListTables(con_bq)
 ```
+
 ### Q1.2 `icustays` data
 
 Connect to the `icustays` table.
+
 ```{r}
 #| eval: true
 
@@ -89,6 +100,7 @@ icustays_tble <- tbl(con_bq, "icustays") |>
 ### Q1.3 `admissions` data
 
 Connect to the `admissions` table.
+
 ```{r}
 #| eval: true
 
@@ -100,6 +112,7 @@ admissions_tble <- tbl(con_bq, "admissions") |>
 ### Q1.4 `patients` data
 
 Connect to the `patients` table.
+
 ```{r}
 #| eval: true
 # TODO
@@ -109,7 +122,8 @@ patients_tble <- tbl(con_bq, "patients") |>
 
 ### Q1.5 `labevents` data
 
-Connect to the `labevents` table and retrieve a subset that only contain subjects who appear in `icustays_tble` and the lab items listed in HW3. Only keep the last lab measurements before the ICU stay and pivot lab items to become variables/columns. Write all steps in _one_ chain of pipes.
+Connect to the `labevents` table and retrieve a subset that only contain subjects who appear in `icustays_tble` and the lab items listed in HW3. Only keep the last lab measurements before the ICU stay and pivot lab items to become variables/columns. Write all steps in *one* chain of pipes.
+
 ```{r}
 #| eval: true
 
@@ -122,14 +136,12 @@ labevents_tble <- tbl(con_bq, "labevents") |>
   left_join(
     icustays_tble |>
       select(subject_id, stay_id, intime),
-    by = "subject_id"
-    ) |>
+    by = "subject_id") |>
   filter(storetime < intime) |>
   group_by(stay_id, itemid) |>
   slice_max(order_by = storetime, with_ties = FALSE) |>
   ungroup() |>
   select(-c(storetime, intime)) |>
-  # compute() |>
   pivot_wider(names_from = itemid, values_from = valuenum) |>
   arrange(subject_id) |>
   rename(
@@ -147,7 +159,8 @@ print(labevents_tble, width = Inf)
 
 ### Q1.6 `chartevents` data
 
-Connect to `chartevents` table and retrieve a subset that only contain subjects who appear in `icustays_tble` and the chart events listed in HW3. Only keep the first chart events during ICU stay and pivot chart events to become variables/columns. Write all steps in _one_ chain of pipes.
+Connect to `chartevents` table and retrieve a subset that only contain subjects who appear in `icustays_tble` and the chart events listed in HW3. Only keep the first chart events during ICU stay and pivot chart events to become variables/columns. Write all steps in *one* chain of pipes.
+
 ```{r}
 #| eval: true
 
@@ -158,8 +171,7 @@ chartevents_tble <- tbl(con_bq, "chartevents") |>
   left_join(
     icustays_tble |>
       select(subject_id, stay_id, intime, outtime),
-    by = "subject_id"
-    ) |>
+    by = "subject_id") |>
   filter(charttime >= intime & charttime <= outtime) |>
   group_by(stay_id, itemid) |>
   slice_min(order_by = charttime, with_ties = FALSE) |>
@@ -179,7 +191,7 @@ print(chartevents_tble, width = Inf)
 
 ### Q1.7 Put things together
 
-This step is similar to Q7 of HW3. Using _one_ chain of pipes `|>` to perform following data wrangling steps: (i) start with the `icustays_tble`, (ii) merge in admissions and patients tables, (iii) keep adults only (age at ICU intime >= 18), (iv) merge in the labevents and chartevents tables, (v) `collect` the tibble.
+This step is similar to Q7 of HW3. Using *one* chain of pipes `|>` to perform following data wrangling steps: (i) start with the `icustays_tble`, (ii) merge in admissions and patients tables, (iii) keep adults only (age at ICU intime \>= 18), (iv) merge in the labevents and chartevents tables, (v) `collect` the tibble.
 
 ```{r}
 #| eval: true
@@ -204,7 +216,9 @@ Perform the following preprocessing steps. (i) Lump infrequent levels into "Othe
 
 Hint: Below is a numerical summary of my tibble after preprocessing:
 
-<iframe width=95% height="500" src="./mimic_icu_cohort_gtsummary.html"></iframe>
+<iframe width="95%" height="500" src="./mimic_icu_cohort_gtsummary.html">
+
+</iframe>
 
 ```{r}
 #| eval: true
@@ -233,10 +247,10 @@ mimic_icu_cohort |>
   tbl_summary(by = los_long)
 ```
 
-
 ### Q1.9 Save the final tibble
 
 Save the final tibble to an R data file `mimic_icu_cohort.rds` in the `mimiciv_shiny` folder.
+
 ```{r}
 #| eval: true
 
@@ -248,7 +262,9 @@ if (!dir.exists("mimiciv_shiny")) {
 mimic_icu_cohort |>
   write_rds("mimiciv_shiny/mimic_icu_cohort.rds", compress = "gz")
 ```
+
 Close database connection and clear workspace.
+
 ```{r}
 #| eval: true
 
@@ -257,6 +273,7 @@ if (exists("con_bq")) {
 }
 rm(list = ls())
 ```
+
 Although it is not a good practice to add big data files to git, for grading purpose, please add `mimic_icu_cohort.rds` to your git repository.
 
 ## Q2. Shiny app
