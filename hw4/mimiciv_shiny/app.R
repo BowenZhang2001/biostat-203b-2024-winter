@@ -138,7 +138,7 @@ server <- function(input, output) {
   output$slider <- renderUI({
     var_group <- input$var_group
     var_name <- input$var_name
-    if (var_group != "demo" || var_name == "age_intime") {
+    if(var_group != "demo" || var_name == "age_intime") {
       xlim_min <- min(mimic_icu_cohort[[var_name]], na.rm = T)
       xlim_max <- max(mimic_icu_cohort[[var_name]], na.rm = T)
       sliderInput("range", "xlim",
@@ -161,13 +161,14 @@ server <- function(input, output) {
     var_group <- selected$var_group
     var_name <- selected$var_name
     
-    if (var_group == "demo" && var_name != "age_intime") {
+    if(var_group == "demo" && var_name != "age_intime") {
       ggplot(data = mimic_icu_cohort) +
         geom_bar(mapping = aes_string(x = var_name, y = "after_stat(count)",
                                       fill = var_name),
                  na.rm = T) +
         theme_bw()
-    } else {
+    }
+    else{
       ggplot(data = mimic_icu_cohort) +
         geom_histogram(mapping = aes_string(x = var_name)) +
         theme_bw() +
@@ -253,11 +254,10 @@ server <- function(input, output) {
       geom_blank() +
       geom_point(data = selected_lab, mapping = aes(x = charttime, y = "Lab"),
                  shape = 3, size = 2) +
-      geom_point(data = selected_procedure,
+      geom_point(data = selected_procedure, size = 3,
                  mapping = aes(x = chartdate,
                                y = "Procedure",
-                               shape = Procedure),
-                 size = 3) +
+                               shape = Procedure)) +
       geom_segment(data = selected_adt,
                    mapping = aes(x = intime, xend = outtime,
                                  y = "ADT", yend = "ADT",
@@ -280,7 +280,6 @@ server <- function(input, output) {
       scale_shape_manual(values = c(1:number_of_procedure))
     
     # Grab the data for icu_plot (plot3)
-
     selected_icu <- icu_stay |>
       filter(subject_id == selected) |>
       arrange(intime) |>

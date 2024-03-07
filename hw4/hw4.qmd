@@ -255,7 +255,7 @@ Save the final tibble to an R data file `mimic_icu_cohort.rds` in the `mimiciv_s
 #| eval: true
 
 # make a directory mimiciv_shiny
-if (!dir.exists("mimiciv_shiny")) {
+if(!dir.exists("mimiciv_shiny")) {
   dir.create("mimiciv_shiny")
 }
 # save the final tibble
@@ -268,7 +268,7 @@ Close database connection and clear workspace.
 ```{r}
 #| eval: true
 
-if (exists("con_bq")) {
+if(exists("con_bq")) {
   dbDisconnect(con_bq)
 }
 rm(list = ls())
