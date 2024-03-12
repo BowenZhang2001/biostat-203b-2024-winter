@@ -29,6 +29,8 @@ library(gtsummary)
 library(ggplot2)
 library(xgboost)
 library(kernlab)
+library(keras)
+library(tensorflow)
 ```
 
 
@@ -194,7 +196,7 @@ mlp_wf <- workflow() |>
 param_grid <- grid_regular(
   dropout(range = c(0, 0.6)),
   hidden_units(range = c(10, 40)),
-  levels = c(3, 4)
+  levels = c(2, 2)
   )
 param_grid
 
@@ -205,7 +207,7 @@ param_grid
 # Train the model
 set.seed(203)
 
-folds <- vfold_cv(all_train_set, v = 5)
+folds <- vfold_cv(all_train_set, v = 2)
 
 mlp_fit <- mlp_wf |>
   tune_grid(
@@ -340,6 +342,77 @@ best_logit <- logit_fit |>
 best_logit
 ```
 According to the result, when `penalty = 1e-05`, `mixture = 0.25`, the model has the best performance via 5-fold CV. It has mean AUC of 0.603.
+
+```{r}
+#| eval: true
+
+# Stacking models
+
+set.seed(203)
+folds <- vfold_cv(all_train_set, v = 3)
+
+# Logistic
+logit_stack_mod <- 
+  logistic_reg(
+    penalty = tune(), 
+    mixture = tune()
+  ) |> 
+  set_engine("glmnet", standardize = TRUE)
+
+logit_stack_wf <- workflow() |>
+  add_recipe(gb_recipe) |>
+  add_model(logit_stack_mod)
+
+logit_stack_grid <- grid_regular(
+  penalty(range = c(-5, 2)), 
+  mixture(),
+  levels = c(50, 5)
+  )
+
+logit_res <- 
+  tune_grid(
+    object = logit_stack_wf, 
+    resamples = folds, 
+    grid = logit_stack_grid,
+    control = control_stack_grid()
+  )
+
+# SVM
+svm_stack_mod <- 
+  svm_rbf(
+    mode = "classification",
+    cost = tune(),
+    rbf_sigma = 0.03162278,
+  ) |> 
+  set_engine("kernlab")
+
+svm_stack_wf <- workflow() |>
+  add_recipe(gb_recipe) |>
+  add_model(svm_stack_mod)
+
+# Tune the model
+param_grid <- grid_regular(
+  cost(range = c(-3, 2)),
+  levels = c(3)
+  )
+
+
+
+
+# XGBoost
+gb_stack_mod <- 
+  boost_tree(
+    mode = "classification",
+    trees = 600,
+    mtry = 9,
+    tree_depth = tune(),
+    learn_rate = tune()
+  ) |> 
+  set_engine("xgboost")
+
+
+
+```
 
 4. Compare model classification performance on the test set. Report both the area under ROC curve and accuracy for each machine learning algorithm and the model stacking. Interpret the results. What are the most important features in predicting long ICU stays? How do the models compare in terms of performance and interpretability?
 
