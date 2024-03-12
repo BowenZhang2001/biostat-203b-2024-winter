@@ -28,6 +28,7 @@ library(tidymodels)
 library(gtsummary)
 library(ggplot2)
 library(xgboost)
+library(kernlab)
 ```
 
 
@@ -167,30 +168,238 @@ best_gb
 According to the result, when `tree_depth = 5`, `learn_rate = 0.0316`, the model has the best performance via 5-fold CV. It has mean AUC of 0.639.
 
 
+```{r}
+#| eval: true
+
+# Model 2 -- MLP
+mlp_mod <- 
+  mlp(
+    mode = "classification",
+    hidden_units = tune(),
+    dropout = tune(),
+    epochs = 30,
+  ) |> 
+  set_engine("keras", verbose = 0)
+mlp_mod
+```
+
+```{r}
+#| eval: true
+
+mlp_wf <- workflow() |>
+  add_recipe(gb_recipe) |>
+  add_model(mlp_mod)
+
+# Tune the model
+param_grid <- grid_regular(
+  dropout(range = c(0, 0.6)),
+  hidden_units(range = c(10, 40)),
+  levels = c(3, 4)
+  )
+param_grid
+
+```
+```{r}
+#| eval: true
+
+# Train the model
+set.seed(203)
+
+folds <- vfold_cv(all_train_set, v = 5)
+
+mlp_fit <- mlp_wf |>
+  tune_grid(
+    resamples = folds,
+    grid = param_grid,
+    metrics = metric_set(roc_auc, accuracy)
+    )
+```
+
+```{r}
+#| eval: true
+
+# Model 3 -- SVM
+
+svm_mod <- 
+  svm_rbf(
+    mode = "classification",
+    cost = tune(),
+    rbf_sigma = tune()
+  ) |> 
+  set_engine("kernlab")
+svm_mod
+
+```
+
+```{r}
+#| eval: true
+
+svm_wf <- workflow() |>
+  add_recipe(gb_recipe) |>
+  add_model(svm_mod)
+
+# Tune the model
+param_grid <- grid_regular(
+  cost(range = c(-3, 2)),
+  rbf_sigma(range = c(-3, 0)),
+  levels = c(3, 3)
+  )
+param_grid
+```
+
+```{r}
+#| eval: true
+
+set.seed(203)
+
+folds <- vfold_cv(all_train_set, v = 2)
+
+svm_fit <- svm_wf |>
+  tune_grid(
+    resamples = folds,
+    grid = param_grid,
+    metrics = metric_set(roc_auc, accuracy)
+    )
+
+svm_fit |>
+  collect_metrics() |>
+  print(width = Inf) |>
+  filter(.metric == "roc_auc") |>
+  ggplot(mapping = aes(x = cost, y = mean, color = factor(rbf_sigma))) +
+  geom_point() +
+  labs(x = "Cost", y = "CV AUC") +
+  scale_x_log10()
+
+svm_fit |>
+  show_best("roc_auc")
+
+best_svm <- svm_fit |>
+  select_best("roc_auc")
+best_svm
+
+```
+According to the result, when `cost = 0.707`, `rbf_sigma` = 0.0316`, the model has the best performance via 2-fold CV. It has mean AUC of 0.620.
+
+```{r}
+#| eval: true
+
+# Model 4 -- Logistic Regression
+
+logit_mod <- 
+  logistic_reg(
+    penalty = tune(), 
+    mixture = tune()
+  ) |> 
+  set_engine("glmnet", standardize = FALSE) |>
+  print()
+```
+```{r}
+#| eval: true
+
+logit_wf <- workflow() |>
+  add_recipe(gb_recipe) |>
+  add_model(logit_mod)
+
+# Tune the model
+param_grid <- grid_regular(
+  penalty(range = c(-5, 2)), 
+  mixture(),
+  levels = c(50, 5)
+  ) |>
+  print()
+```
+
+```{r}
+#| eval: true
+
+set.seed(203)
+folds <- vfold_cv(all_train_set, v = 5)
+
+logit_fit <- logit_wf |>
+  tune_grid(
+    resamples = folds,
+    grid = param_grid,
+    metrics = metric_set(roc_auc, accuracy)
+    )
+
+logit_fit |>
+  # aggregate metrics from K folds
+  collect_metrics() |>
+  print(width = Inf) |>
+  filter(.metric == "roc_auc") |>
+  ggplot(mapping = aes(x = penalty, y = mean, color = factor(mixture))) +
+  geom_point() +
+  labs(x = "Penalty", y = "CV AUC") +
+  scale_x_log10()
+
+logit_fit |>
+  show_best("roc_auc")
+
+best_logit <- logit_fit |>
+  select_best("roc_auc")
+best_logit
+```
+According to the result, when `penalty = 1e-05`, `mixture = 0.25`, the model has the best performance via 5-fold CV. It has mean AUC of 0.603.
+
 4. Compare model classification performance on the test set. Report both the area under ROC curve and accuracy for each machine learning algorithm and the model stacking. Interpret the results. What are the most important features in predicting long ICU stays? How do the models compare in terms of performance and interpretability?
 
 ```{r}
 #| eval: true
 
 # Final workflow for XGBoost
-final_wf <- gb_wf |>
+final_wf_gb <- gb_wf |>
   finalize_workflow(best_gb)
 final_wf
 
-final_fit <- 
-  final_wf |>
+final_fit_gb <- 
+  final_wf_gb |>
   last_fit(data_split)
 
 # Test metrics
-final_fit |> 
+final_fit_gb |> 
   collect_metrics()
 ```
 The AUC and accuracy of the XGBoost model on the test set are 0.637 and 0.597, respectively.
 
 ```{r}
+#| eval: true
+
+# Final workflow for SVM
+final_wf_svm <- svm_wf |>
+  finalize_workflow(best_svm)
+final_wf_svm
+
+final_fit_svm <- 
+  final_wf_svm |>
+  last_fit(data_split)
+
+final_fit_svm |> 
+  collect_metrics()
+
+```
+The AUC and accuracy of the SVM model on the test set are 0.618 and 0.584, respectively.
+
+```{r}
+#| eval: true
+
+# Final workflow for Logistic Regression
+final_wf_logit <- logit_wf |>
+  finalize_workflow(best_logit)
+final_wf_logit
+
+final_fit_logit <- 
+  final_wf_logit |>
+  last_fit(data_split)
+
+final_fit_logit |>
+  collect_metrics()
+
+```
+The AUC and accuracy of the Logistic model on the test set are 0.595 and 0.573, respectively.
 
 ```{r}
 #| eval: true
 
 # Importance of the features
+
 ```
