@@ -30,7 +30,7 @@ library(ggplot2)
 library(xgboost)
 library(kernlab)
 library(keras)
-library(tensorflow)
+library(stacks)
 ```
 
 
@@ -136,7 +136,7 @@ param_grid <- grid_regular(
 param_grid
 ```
 
-```{r}
+```{r, cache = TRUE}
 #| eval: true
 
 # Train the model
@@ -173,54 +173,7 @@ According to the result, when `tree_depth = 5`, `learn_rate = 0.0316`, the model
 ```{r}
 #| eval: true
 
-# Model 2 -- MLP
-mlp_mod <- 
-  mlp(
-    mode = "classification",
-    hidden_units = tune(),
-    dropout = tune(),
-    epochs = 30,
-  ) |> 
-  set_engine("keras", verbose = 0)
-mlp_mod
-```
-
-```{r}
-#| eval: true
-
-mlp_wf <- workflow() |>
-  add_recipe(gb_recipe) |>
-  add_model(mlp_mod)
-
-# Tune the model
-param_grid <- grid_regular(
-  dropout(range = c(0, 0.6)),
-  hidden_units(range = c(10, 40)),
-  levels = c(2, 2)
-  )
-param_grid
-
-```
-```{r}
-#| eval: true
-
-# Train the model
-set.seed(203)
-
-folds <- vfold_cv(all_train_set, v = 2)
-
-mlp_fit <- mlp_wf |>
-  tune_grid(
-    resamples = folds,
-    grid = param_grid,
-    metrics = metric_set(roc_auc, accuracy)
-    )
-```
-
-```{r}
-#| eval: true
-
-# Model 3 -- SVM
+# Model 2 -- SVM
 
 svm_mod <- 
   svm_rbf(
@@ -249,7 +202,7 @@ param_grid <- grid_regular(
 param_grid
 ```
 
-```{r}
+```{r, cache = TRUE}
 #| eval: true
 
 set.seed(203)
@@ -285,7 +238,7 @@ According to the result, when `cost = 0.707`, `rbf_sigma` = 0.0316`, the model h
 ```{r}
 #| eval: true
 
-# Model 4 -- Logistic Regression
+# Model 3 -- Logistic Regression
 
 logit_mod <- 
   logistic_reg(
@@ -295,6 +248,7 @@ logit_mod <-
   set_engine("glmnet", standardize = FALSE) |>
   print()
 ```
+
 ```{r}
 #| eval: true
 
@@ -343,13 +297,13 @@ best_logit
 ```
 According to the result, when `penalty = 1e-05`, `mixture = 0.25`, the model has the best performance via 5-fold CV. It has mean AUC of 0.603.
 
-```{r}
+```{r, cache = TRUE}
 #| eval: true
 
 # Stacking models
 
 set.seed(203)
-folds <- vfold_cv(all_train_set, v = 3)
+folds <- vfold_cv(all_train_set, v = 2)
 
 # Logistic
 logit_stack_mod <- 
@@ -366,7 +320,7 @@ logit_stack_wf <- workflow() |>
 logit_stack_grid <- grid_regular(
   penalty(range = c(-5, 2)), 
   mixture(),
-  levels = c(50, 5)
+  levels = c(5, 5)
   )
 
 logit_res <- 
@@ -390,39 +344,84 @@ svm_stack_wf <- workflow() |>
   add_recipe(gb_recipe) |>
   add_model(svm_stack_mod)
 
-# Tune the model
-param_grid <- grid_regular(
+svm_stack_grid <- grid_regular(
   cost(range = c(-3, 2)),
   levels = c(3)
   )
 
-
-
+svm_res <- svm_stack_wf |>
+  tune_grid(
+    object = svm_stack_wf,
+    resamples = folds,
+    grid = svm_stack_grid,
+    control = control_stack_grid()
+    )
 
 # XGBoost
 gb_stack_mod <- 
   boost_tree(
     mode = "classification",
-    trees = 600,
+    trees = 500,
     mtry = 9,
     tree_depth = tune(),
     learn_rate = tune()
   ) |> 
   set_engine("xgboost")
 
+gb_stack_wf <- workflow() |>
+  add_recipe(gb_recipe) |>
+  add_model(gb_stack_mod)
 
+gb_stack_grid <- grid_regular(
+  tree_depth(range = c(1L, 3L)),
+  learn_rate(range = c(-4, 1), trans = log10_trans()),
+  levels = c(2, 5)
+  )
 
+gb_res <- gb_stack_wf |>
+  tune_grid(
+    object = gb_stack_wf,
+    resamples = folds,
+    grid = gb_stack_grid,
+    control = control_stack_grid()
+    )
+
+# Model stacking
+mimic_model_st <- 
+  stacks() |>
+  # add candidate members
+  add_candidates(logit_res) |>
+  add_candidates(gb_res) |>
+  add_candidates(svm_res) |>
+  # determine how to combine their predictions
+  blend_predictions(
+    penalty = 10^(-3:1),
+    metrics = c("roc_auc"),
+    times = 3
+    ) |>
+  # fit the candidates with nonzero stacking coefficients
+  fit_members()
+
+mimic_model_st
+
+autoplot(mimic_model_st)
+
+autoplot(mimic_model_st, type = "members")
+
+autoplot(mimic_model_st, type = "weights")
 ```
+The stacking model combines 3 XGBoost models and 2 SVM models. The Boosting model has the highest weight, followed by the SVM model.
 
 4. Compare model classification performance on the test set. Report both the area under ROC curve and accuracy for each machine learning algorithm and the model stacking. Interpret the results. What are the most important features in predicting long ICU stays? How do the models compare in terms of performance and interpretability?
 
-```{r}
+```{r, cache = TRUE}
 #| eval: true
 
 # Final workflow for XGBoost
+set.seed(203)
 final_wf_gb <- gb_wf |>
   finalize_workflow(best_gb)
-final_wf
+final_wf_gb
 
 final_fit_gb <- 
   final_wf_gb |>
@@ -434,7 +433,7 @@ final_fit_gb |>
 ```
 The AUC and accuracy of the XGBoost model on the test set are 0.637 and 0.597, respectively.
 
-```{r}
+```{r, cache = TRUE}
 #| eval: true
 
 # Final workflow for SVM
@@ -452,7 +451,7 @@ final_fit_svm |>
 ```
 The AUC and accuracy of the SVM model on the test set are 0.618 and 0.584, respectively.
 
-```{r}
+```{r, cache = TRUE}
 #| eval: true
 
 # Final workflow for Logistic Regression
@@ -470,9 +469,60 @@ final_fit_logit |>
 ```
 The AUC and accuracy of the Logistic model on the test set are 0.595 and 0.573, respectively.
 
-```{r}
+```{r, cache = TRUE}
 #| eval: true
 
-# Importance of the features
+# Final workflow for Stacking
 
+mimic_pred <- test_set %>%
+  bind_cols(predict(mimic_model_st, ., type = "prob")) |>
+  mutate(.pred_class = if_else(.pred_TRUE > .pred_FALSE, "TRUE", "FALSE"),
+         .pred_class = as.factor(.pred_class))
+
+
+
+yardstick::roc_auc(
+  mimic_pred,
+  truth = los_long,
+  contains(".pred_FALSE")
+  )
+
+yardstick::accuracy(
+  mimic_pred,
+  truth = los_long,
+  estimate = .pred_class
+  )
 ```
+The AUC and accuracy of the stacking model on the test set are 0.636 and 0.596, respectively.
+
+```{r, cache = TRUE}
+#| eval: true
+
+# Feature importance for XGBoost
+feature_importance_gb <- final_fit_gb %>%
+  extract_fit_parsnip() %>%
+  pluck("fit") %>%
+  vip::vip()
+
+print(feature_importance_gb)
+```
+
+```{r, cache = TRUE}
+#| eval: true
+
+# Feature importance for Logistic Regression
+feature_importance_logit <- final_fit_logit |>
+  extract_fit_parsnip() |>
+  pluck("fit") |>
+  vip::vip()
+
+print(feature_importance_logit)
+```
+
+### Conclusion
+
+According to the AUC and accuracy, the XGBoost model has the best performance on the test set. The stacking model has similar performance to the XGBoost model. Logistic model is the worst model among those four models, (but it is much faster than others). The stacking model does not beat the XGBoost model, probably because I did not tune the stacking model too much due to the time limit. The SVM is not suitable for dataset with so many observations such as this one, because the training time is too long.
+
+The most important features in predicting long ICU stays are `HR`, `Hematocrit`, `age_intime`, `TempF`, `WBC`. One interesting thing is that, XGBoost model does not think categorical variables are important. In contrast, logistic model's top 2 variables is `first_care_unit`. Maybe when deploying Elastic Net method, `RR` (included in XGBoost, but excluded in Logistic model) is associated with `first_care_unit`, so it is deleted by Elastic Net.
+
+The Logistic model is the most interpretable model among those models. The stacking model is the least interpretable model. The XGBoost model is also interpretable because it combines many decision trees. Considering that XGBoost has the best performance, and its training time is acceptable, I would recommend using XGBoost model for this dataset.
