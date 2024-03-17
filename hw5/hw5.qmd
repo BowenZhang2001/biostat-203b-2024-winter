@@ -19,6 +19,13 @@ Using the ICU cohort `mimiciv_icu_cohort.rds` you built in Homework 4, develop *
 
 1. Data preprocessing and feature engineering.
 
+2. Partition data into 50% training set and 50% test set. Stratify partitioning according to `los_long`. For grading purpose, sort the data by `subject_id`, `hadm_id`, and `stay_id` and use the seed `203` for the initial data split. Below is the sample code.
+
+3. Train and tune the models using the training set.
+
+4. Compare model classification performance on the test set. Report both the area under ROC curve and accuracy for each machine learning algorithm and the model stacking. Interpret the results. What are the most important features in predicting long ICU stays? How do the models compare in terms of performance and interpretability?
+
+
 ```{r setup}
 #| eval: true
 
@@ -54,7 +61,6 @@ tbl_summary(mimiciv_icu_cohort)
 ```
 
 
-2. Partition data into 50% training set and 50% test set. Stratify partitioning according to `los_long`. For grading purpose, sort the data by `subject_id`, `hadm_id`, and `stay_id` and use the seed `203` for the initial data split. Below is the sample code.
 ```{r}
 #| eval: true
 
@@ -78,7 +84,6 @@ test_set <- testing(data_split) |>
   select(-c(subject_id, hadm_id, stay_id))
 ```
 
-3. Train and tune the models using the training set.
 
 ```{r}
 #| eval: true
@@ -93,7 +98,7 @@ gb_recipe <-
   step_impute_median(c(Chloride, Glucose, Sodium, Creatinine, Bicarbonate,
                        Potassium, WBC, Hematocrit, NBPs, RR, HR, TempF,
                        NBPd)) |>
-  # create traditional dummy variables (necessary for xgboost)
+  # create traditional dummy variables
   step_dummy(all_nominal_predictors()) |>
   # zero-variance filter
   step_zv(all_numeric_predictors()) |> 
@@ -102,6 +107,7 @@ gb_recipe <-
   print()
 ```
 
+### Model 1 -- XGBoost
 ```{r}
 #| eval: true
 
@@ -167,8 +173,10 @@ best_gb <- gb_fit |>
   select_best("roc_auc")
 best_gb
 ```
-According to the result, when `tree_depth = 5`, `learn_rate = 0.0316`, the model has the best performance via 5-fold CV. It has mean AUC of 0.639.
+According to the result, when `tree_depth = 5`, `learn_rate = 0.0316`, the model has the best performance via 5-fold CV. It has mean AUC of 0.639. In order to shorten the training time, and to avoid overfitting, I set the `mtry = 9` (randomly choose 9 variables from predictors).
 
+
+### Model 2 -- SVM
 
 ```{r}
 #| eval: true
@@ -233,7 +241,9 @@ best_svm <- svm_fit |>
 best_svm
 
 ```
-According to the result, when `cost = 0.707`, `rbf_sigma` = 0.0316`, the model has the best performance via 2-fold CV. It has mean AUC of 0.620.
+According to the result, when `cost = 0.707`, `rbf_sigma = 0.0316`, the model has the best performance via 2-fold CV. It has mean AUC of 0.620. Since the training time of SVM is very long, I only use 2-fold CV to tune the model. Using 2-fold CV and 3 by 3 grid search, the training process still takes more than 15 mins.
+
+### Model 3 -- Logistic Regression
 
 ```{r}
 #| eval: true
@@ -295,7 +305,9 @@ best_logit <- logit_fit |>
   select_best("roc_auc")
 best_logit
 ```
-According to the result, when `penalty = 1e-05`, `mixture = 0.25`, the model has the best performance via 5-fold CV. It has mean AUC of 0.603.
+According to the result, when `penalty = 1e-05`, `mixture = 0.25`, the model has the best performance via 5-fold CV. It has mean AUC of 0.603. There are not obvious "U curve" in the plot of grid search, and many combinations of penalty and mixture have similar performance. I simply choose the best combination on the top of the list.
+
+### Stacking Model
 
 ```{r, cache = TRUE}
 #| eval: true
@@ -410,9 +422,9 @@ autoplot(mimic_model_st, type = "members")
 
 autoplot(mimic_model_st, type = "weights")
 ```
-The stacking model combines 3 XGBoost models and 2 SVM models. The Boosting model has the highest weight, followed by the SVM model.
+The stacking model combines 3 XGBoost models and 2 SVM models. The Boosting model has the highest weight, followed by the SVM model. The logistic model is not included in the final stacking model.
 
-4. Compare model classification performance on the test set. Report both the area under ROC curve and accuracy for each machine learning algorithm and the model stacking. Interpret the results. What are the most important features in predicting long ICU stays? How do the models compare in terms of performance and interpretability?
+### Model Performance on Test Set
 
 ```{r, cache = TRUE}
 #| eval: true
